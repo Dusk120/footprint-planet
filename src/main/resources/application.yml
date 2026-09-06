@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: Footprint_Planet
+  # 默认激活 dev，账号密码集中在 application-dev.yml，部署新环境时另建 application-{env}.yml 切换
+  profiles:
+    active: dev
+  # ===== MySQL datasource（连接目标 / 账号密码见 application-dev.yml 的 footprint.datasource.*）=====
+  datasource:
+    driver-class-name: ${footprint.datasource.driver-class-name}
+    url: jdbc:mysql://${footprint.datasource.host}:${footprint.datasource.port}/${footprint.datasource.database}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${footprint.datasource.username}
+    password: ${footprint.datasource.password}
+  # ===== Redis（连接信息见 application-dev.yml 的 footprint.redis.*）=====
+  data:
+    redis:
+      host: ${footprint.redis.host}
+      port: ${footprint.redis.port}
+      password: ${footprint.redis.password:}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# ===== MyBatis-Plus =====
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.qzxx.footprint_planet.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# ===== JWT（签名密钥）=====
+footprint:
+  jwt:
+    secret: Zm9vdHByaW50LXBsYW5ldC1qd3Qtc2VjcmV0LWtleS0yMDI2LXNlY3VyZQ==
+    expiration: 604800000
