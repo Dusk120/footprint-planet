@@ -1,14 +1,21 @@
 package com.qzxx.footprint_planet.dto.request;
 
-public record LocationDTO(
-        String name,
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-        String province,
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class LocationDTO {
 
-        String adcode,
+    private String name;
 
-        Double lng,
+    private String province;
 
-        Double lat
-) {
+    private String adcode;
+
+    private Double lng;
+
+    private Double lat;
 }

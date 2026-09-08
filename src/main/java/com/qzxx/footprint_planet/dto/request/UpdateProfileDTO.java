@@ -1,17 +1,23 @@
 package com.qzxx.footprint_planet.dto.request;
 
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record UpdateProfileDTO(
-        @Size(max = 50, message = "昵称长度不能超过 50")
-        String nickname,
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateProfileDTO {
 
-        @Size(max = 200, message = "签名长度不能超过 200")
-        String motto,
+    @Size(max = 50, message = "昵称长度不能超过 50")
+    private String nickname;
 
-        String oldPassword,
+    @Size(max = 200, message = "签名长度不能超过 200")
+    private String motto;
 
-        @Size(min = 6, max = 50, message = "新密码长度须在 6~50 位之间")
-        String newPassword
-) {
+    private String oldPassword;
+
+    @Size(min = 6, max = 50, message = "新密码长度须在 6~50 位之间")
+    private String newPassword;
 }

@@ -1,8 +1,17 @@
 package com.qzxx.footprint_planet.vo;
 
-public record AuthorProfileVO(
-        UserVO user,
-        Integer notesCount,
-        Integer plansCount
-) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class AuthorProfileVO {
+
+    private UserVO user;
+
+    private Integer notesCount;
+
+    private Integer plansCount;
 }

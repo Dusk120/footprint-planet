@@ -1,28 +1,34 @@
 package com.qzxx.footprint_planet.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-public record PlanDTO(
-        @NotBlank(message = "规划名称不能为空")
-        String name,
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlanDTO {
 
-        @NotBlank(message = "目的地不能为空")
-        String destination,
+    @NotBlank(message = "规划名称不能为空")
+    private String name;
 
-        String location,
+    @NotBlank(message = "目的地不能为空")
+    private String destination;
 
-        String image,
+    private String location;
 
-        LocalDate startDate,
+    private String image;
 
-        Boolean isPublic,
+    private LocalDate startDate;
 
-        List<Map<String, Object>> days,
+    private Boolean isPublic;
 
-        List<Map<String, Object>> waypoints
-) {
+    private List<Map<String, Object>> days;
+
+    private List<Map<String, Object>> waypoints;
 }

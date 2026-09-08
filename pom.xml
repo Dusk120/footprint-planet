@@ -103,6 +103,13 @@
 			<version>3.18.5</version>
 		</dependency>
 
+		<!-- 图形验证码（Hutool Captcha） -->
+		<dependency>
+			<groupId>cn.hutool</groupId>
+			<artifactId>hutool-captcha</artifactId>
+			<version>5.8.47</version>
+		</dependency>
+
 		<!-- OpenAPI / Swagger UI 接口文档（springdoc 3.x 才支持 Spring Boot 4，2.x 仅到 Boot 3） -->
 		<dependency>
 			<groupId>org.springdoc</groupId>

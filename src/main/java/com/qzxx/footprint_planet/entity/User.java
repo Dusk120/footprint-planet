@@ -24,10 +24,6 @@ public class User {
 
     private String motto;
 
-    private Integer level;
-
-    private String levelTitle;
-
     private Integer totalKm;
 
     private Integer totalDays;

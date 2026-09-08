@@ -1,17 +1,31 @@
 package com.qzxx.footprint_planet.vo;
 
-public record UserVO(
-        Long id,
-        String username,
-        String nickname,
-        String avatar,
-        String motto,
-        Integer level,
-        String levelTitle,
-        Integer visitedCities,
-        Integer visitedProvinces,
-        Integer totalKm,
-        Integer totalDays,
-        String role
-) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserVO {
+
+    private Long id;
+
+    private String username;
+
+    private String nickname;
+
+    private String avatar;
+
+    private String motto;
+
+    private Integer visitedCities;
+
+    private Integer visitedProvinces;
+
+    private Integer totalKm;
+
+    private Integer totalDays;
+
+    private String role;
 }

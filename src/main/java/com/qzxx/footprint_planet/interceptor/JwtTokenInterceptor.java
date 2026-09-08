@@ -44,7 +44,8 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         }
         Long userId = Long.valueOf(claims.get("userId").toString());
         String role = claims.get("role").toString();
-        BaseContext.setCurrentUser(userId, role);
+        BaseContext.setCurrentUserId(userId);
+        BaseContext.setCurrentUserRole(role);
         //3、通过，放行
         return true;
     }

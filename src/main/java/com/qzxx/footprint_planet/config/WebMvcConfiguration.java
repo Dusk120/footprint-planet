@@ -24,7 +24,8 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                         "/api/auth/register",      // 注册
                         "/api/auth/login",         // 登录
                         "/api/hot-destinations",   // 热门目的地
-                        "/api/feedback"            // 提交反馈
+                        "/api/feedback",           // 提交反馈
+                        "/api/captcha"             // 图形验证码
                 );
     }
 }

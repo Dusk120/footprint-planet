@@ -1,7 +1,15 @@
 package com.qzxx.footprint_planet.vo;
 
-public record LoginVO(
-        String token,
-        UserVO user
-) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class LoginVO {
+
+    private String token;
+
+    private UserVO user;
 }

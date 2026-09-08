@@ -1,28 +1,34 @@
 package com.qzxx.footprint_planet.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-public record VisitedCityDTO(
-        @NotBlank(message = "城市名不能为空")
-        String cityName,
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class VisitedCityDTO {
 
-        @NotBlank(message = "省份不能为空")
-        String province,
+    @NotBlank(message = "城市名不能为空")
+    private String cityName;
 
-        String adcode,
+    @NotBlank(message = "省份不能为空")
+    private String province;
 
-        Double lat,
+    private String adcode;
 
-        Double lng,
+    private Double lat;
 
-        String color,
+    private Double lng;
 
-        LocalDate lightDate,
+    private String color;
 
-        List<Map<String, Object>> records
-) {
+    private LocalDate lightDate;
+
+    private List<Map<String, Object>> records;
 }
