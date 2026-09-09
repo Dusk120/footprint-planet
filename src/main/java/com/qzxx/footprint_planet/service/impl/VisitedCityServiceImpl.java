@@ -1,5 +1,6 @@
 package com.qzxx.footprint_planet.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.context.BaseContext;
@@ -8,10 +9,7 @@ import com.qzxx.footprint_planet.entity.VisitedCity;
 import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.VisitedCityService;
 import jakarta.annotation.Resource;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -35,7 +33,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
             visitedCityDTO.setLightDate(java.time.LocalDate.now());
         }
         VisitedCity visitedCity = new VisitedCity();
-        BeanUtils.copyProperties(visitedCityDTO, visitedCity);
+        BeanUtil.copyProperties(visitedCityDTO, visitedCity);
         visitedCity.setUserId(BaseContext.getCurrentId());
         visitedCity.setCreatedAt(java.time.LocalDateTime.now());
         visitedCityMapper.insert(visitedCity);
@@ -51,7 +49,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         if (!visitedCity.getUserId().equals(BaseContext.getCurrentId())) {
             throw new BusinessException(403,"无权限修改");
         }
-        BeanUtils.copyProperties(visitedCityDTO, visitedCity);
+        BeanUtil.copyProperties(visitedCityDTO, visitedCity);
         visitedCityMapper.updateById(visitedCity);
         return visitedCity;
     }

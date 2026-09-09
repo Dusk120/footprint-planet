@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserServiceImpl implements UserService {
     @Resource
@@ -97,5 +99,10 @@ public class UserServiceImpl implements UserService {
         authorProfileVO.setNotesCount(noteMapper.selectCount(new LambdaQueryWrapper<Note>().eq(Note::getAuthorId, user.getId())).intValue());
         authorProfileVO.setPlansCount(planMapper.selectCount(new LambdaQueryWrapper<Plan>().eq(Plan::getUserId, user.getId()).eq(Plan::getIsPublic, true)).intValue());
         return authorProfileVO;
+    }
+
+    @Override
+    public List<Plan> getPlans(Long id) {
+        return planMapper.selectList(new LambdaQueryWrapper<Plan>().eq(Plan::getUserId, id).eq(Plan::getIsPublic, true).orderByDesc(Plan::getCreatedAt));
     }
 }
