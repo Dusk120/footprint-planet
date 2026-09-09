@@ -1,26 +1,37 @@
 package com.qzxx.footprint_planet.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.UpdateProfileDTO;
+import com.qzxx.footprint_planet.entity.Note;
+import com.qzxx.footprint_planet.entity.Plan;
 import com.qzxx.footprint_planet.entity.User;
+import com.qzxx.footprint_planet.mapper.NoteMapper;
+import com.qzxx.footprint_planet.mapper.PlanMapper;
 import com.qzxx.footprint_planet.mapper.UserMapper;
 import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.UserService;
+import com.qzxx.footprint_planet.vo.AuthorProfileVO;
 import com.qzxx.footprint_planet.vo.UserVO;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserServiceImpl implements UserService {
-    @Autowired
+    @Resource
     private UserMapper userMapper;
-    @Autowired
+    @Resource
     private VisitedCityMapper visitedCityMapper;
-    @Autowired
+    @Resource
     private PasswordEncoder passwordEncoder;
+    @Resource
+    private NoteMapper noteMapper;
+    @Resource
+    private PlanMapper planMapper;
 
 
     @Override
@@ -69,5 +80,22 @@ public class UserServiceImpl implements UserService {
         userVO.setVisitedCities(visitedCityMapper.countCitiesByUserId(userId));
         userVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(userId));
         return userVO;
+    }
+
+    @Override
+    public AuthorProfileVO getAuthor(Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new BusinessException(404, "作者不存在");
+        }
+        AuthorProfileVO authorProfileVO = new AuthorProfileVO();
+        UserVO userVO = new UserVO();
+        BeanUtil.copyProperties(user, userVO);
+        authorProfileVO.setUser(userVO);
+        userVO.setVisitedCities(visitedCityMapper.countCitiesByUserId(user.getId()));
+        userVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(user.getId()));
+        authorProfileVO.setNotesCount(noteMapper.selectCount(new LambdaQueryWrapper<Note>().eq(Note::getAuthorId, user.getId())).intValue());
+        authorProfileVO.setPlansCount(planMapper.selectCount(new LambdaQueryWrapper<Plan>().eq(Plan::getUserId, user.getId()).eq(Plan::getIsPublic, true)).intValue());
+        return authorProfileVO;
     }
 }
