@@ -7,11 +7,7 @@ import com.qzxx.footprint_planet.service.AuthService;
 import com.qzxx.footprint_planet.vo.LoginVO;
 import com.qzxx.footprint_planet.vo.UserVO;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /** 认证接口：注册 / 登录 / 退出 / 当前用户（register、login 已入拦截器白名单，me 需登录） */
 @RestController

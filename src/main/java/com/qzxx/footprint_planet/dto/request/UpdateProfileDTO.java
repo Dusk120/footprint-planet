@@ -18,6 +18,5 @@ public class UpdateProfileDTO {
 
     private String oldPassword;
 
-    @Size(min = 6, max = 50, message = "新密码长度须在 6~50 位之间")
     private String newPassword;
 }
