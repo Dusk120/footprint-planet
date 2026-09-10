@@ -29,9 +29,11 @@ public class NoteVO {
 
     private Long authorId;
 
+    private String authorAvatar;
+
     private Integer likes;
 
-    private List<String> likedBy;
+    private Boolean liked;
 
     private LocalDateTime createdAt;
 }

@@ -16,6 +16,9 @@ public class UpdateProfileDTO {
     @Size(max = 200, message = "签名长度不能超过 200")
     private String motto;
 
+    @Size(max = 255, message = "头像地址长度不能超过 255")
+    private String avatar;
+
     private String oldPassword;
 
     private String newPassword;

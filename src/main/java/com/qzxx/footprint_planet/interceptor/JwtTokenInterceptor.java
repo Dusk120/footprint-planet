@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -20,22 +21,37 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
     private JwtProperties jwtProperties;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        //  免登录的公开 GET 接口（路径 + 方法双命中才放行，避免同路径写操作被误放，
-        if ("GET".equalsIgnoreCase(request.getMethod()) && isPublicReadPath(request.getRequestURI())) {
-            return true;
-        }
-        //判断当前拦截到的是Controller的方法还是其他资源
-        if (!(handler instanceof HandlerMethod)) {
-            //当前拦截到的不是动态方法，直接放行
-            return true;
-        }
         //1、获取token
         String token = request.getHeader(jwtProperties.getTokenName());
         //1.1 前端统一以 "Bearer <token>" 携带，剥掉前缀只留 token 本体
         if (token != null && token.startsWith("Bearer ")) {
             token = token.substring(7);
         }
-        //2、解析token：缺失/无效/过期统一抛 401 业务异常，
+
+        //2、免登录的公开 GET 接口（路径 + 方法双命中才放行，避免同路径写操作被误放）。
+        //   采用「可选认证」：带了有效 token 就解析出当前用户（笔记流要据此判断「我点没点过赞」），
+        //   没带或已失效也照常放行，按匿名处理。
+        if ("GET".equalsIgnoreCase(request.getMethod()) && isPublicReadPath(request.getRequestURI())) {
+            if (StringUtils.hasText(token)) {
+                try {
+                    Claims claims = JwtUtil.parseJWT(jwtProperties.getSecretKey(), token);
+                    if (claims != null) {
+                        BaseContext.setCurrentUserId(Long.valueOf(claims.get("userId").toString()));
+                        BaseContext.setCurrentUserRole(claims.get("role").toString());
+                    }
+                } catch (Exception e) {
+                    log.debug("公开接口 token 解析失败，按匿名处理: {}", e.getMessage());
+                }
+            }
+            return true;
+        }
+
+        //判断当前拦截到的是Controller的方法还是其他资源
+        if (!(handler instanceof HandlerMethod)) {
+            //当前拦截到的不是动态方法，直接放行
+            return true;
+        }
+        //3、解析token：缺失/无效/过期统一抛 401 业务异常，
         //   由全局异常处理器返回 {code:401,message,...}（HTTP 200），符合前端解包约定
         log.info("jwt校验:{}", token);
         Claims claims = JwtUtil.parseJWT(jwtProperties.getSecretKey(), token);
@@ -46,7 +62,7 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         String role = claims.get("role").toString();
         BaseContext.setCurrentUserId(userId);
         BaseContext.setCurrentUserRole(role);
-        //3、通过，放行
+        //4、通过，放行
         return true;
     }
     @Override

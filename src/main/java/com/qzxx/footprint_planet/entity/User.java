@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 @TableName("user")
 public class User {
 
+    public static final String DEFAULT_AVATAR = "https://hcy120.oss-cn-hangzhou.aliyuncs.com/20200414210134_qbeyi.jpg";
+
     @TableId(type = IdType.AUTO)
     private Long id;
 
@@ -35,4 +37,9 @@ public class User {
     private Integer status;
 
     private LocalDateTime createdAt;
+
+    /** 未设置头像时回落到默认图（覆写 Lombok 生成的 getter，register/login/me/作者主页全走这里） */
+    public String getAvatar() {
+        return avatar == null || avatar.isBlank() ? DEFAULT_AVATAR : avatar;
+    }
 }

@@ -2,6 +2,7 @@ package com.qzxx.footprint_planet.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.UpdateProfileDTO;
@@ -16,9 +17,9 @@ import com.qzxx.footprint_planet.service.UserService;
 import com.qzxx.footprint_planet.vo.AuthorProfileVO;
 import com.qzxx.footprint_planet.vo.UserVO;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -37,6 +38,7 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
+    @Transactional
     public UserVO updateMe(UpdateProfileDTO updateProfileDTO) {
         boolean changed = false;
         Long userId = BaseContext.getCurrentId();
@@ -49,6 +51,9 @@ public class UserServiceImpl implements UserService {
         }
         if (updateProfileDTO.getNickname() != null && !updateProfileDTO.getNickname().isEmpty()) {
             user.setNickname(updateProfileDTO.getNickname());
+            noteMapper.update(null, new LambdaUpdateWrapper<Note>()
+                    .eq(Note::getAuthorId, user.getId())
+                    .set(Note::getAuthorNickname, updateProfileDTO.getNickname()));
             changed = true;
         }
         if (updateProfileDTO.getOldPassword() != null && !updateProfileDTO.getOldPassword().isEmpty()) {
@@ -72,6 +77,10 @@ public class UserServiceImpl implements UserService {
         }
         if (updateProfileDTO.getMotto() != null ) {
             user.setMotto(updateProfileDTO.getMotto());
+            changed = true;
+        }
+        if (updateProfileDTO.getAvatar() != null && !updateProfileDTO.getAvatar().isEmpty()) {
+            user.setAvatar(updateProfileDTO.getAvatar());
             changed = true;
         }
         if (changed) {
