@@ -4,11 +4,10 @@ import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.PlanDTO;
 import com.qzxx.footprint_planet.entity.Plan;
 import com.qzxx.footprint_planet.service.PlanService;
+import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/plans")
@@ -17,8 +16,9 @@ public class PlanController {
     private PlanService planService;
 
     @GetMapping
-    public Result<List<Plan>> getPlans() {
-        return Result.success(planService.getPlans());
+    public Result<PageVO<Plan>> getPlans(@RequestParam(defaultValue = "1") Integer page,
+                                         @RequestParam(defaultValue = "10") Integer pageSize) {
+        return Result.success(planService.getPlans(page, pageSize));
     }
 
     @PostMapping

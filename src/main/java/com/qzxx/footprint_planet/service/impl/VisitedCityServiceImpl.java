@@ -1,13 +1,17 @@
 package com.qzxx.footprint_planet.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.VisitedCityDTO;
 import com.qzxx.footprint_planet.entity.VisitedCity;
 import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.VisitedCityService;
+import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -21,6 +25,16 @@ public class VisitedCityServiceImpl implements VisitedCityService {
     public List<VisitedCity> getVisitedCities() {
         Long userId = BaseContext.getCurrentId();
         return visitedCityMapper.selectList(new QueryWrapper<VisitedCity>().eq("user_id", userId));
+    }
+
+    @Override
+    public PageVO<VisitedCity> getMemories(Integer page, Integer pageSize) {
+        Long userId = BaseContext.getCurrentId();
+        Page<VisitedCity> p = new Page<>(page, pageSize);
+        p.addOrder(OrderItem.desc("light_date"), OrderItem.desc("id"));
+        Page<VisitedCity> result=visitedCityMapper.selectPage(p, new LambdaQueryWrapper<VisitedCity>().
+                eq(VisitedCity::getUserId, userId));
+        return new PageVO<>(result.getRecords(), result.getTotal(), page, pageSize);
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.VisitedCityDTO;
 import com.qzxx.footprint_planet.entity.VisitedCity;
 import com.qzxx.footprint_planet.service.VisitedCityService;
+import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,12 @@ public class VisitedCityController {
     @GetMapping
     public Result<List<VisitedCity>> getVisitedCities() {
         return Result.success(visitedCityService.getVisitedCities());
+    }
+
+    @GetMapping("/memories")
+    public Result<PageVO<VisitedCity>> getMemories(@RequestParam(defaultValue = "1") Integer page,
+                                                   @RequestParam(defaultValue = "6") Integer pageSize) {
+        return Result.success(visitedCityService.getMemories(page, pageSize));
     }
 
     @PostMapping

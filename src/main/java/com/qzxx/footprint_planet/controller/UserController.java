@@ -5,12 +5,11 @@ import com.qzxx.footprint_planet.dto.request.UpdateProfileDTO;
 import com.qzxx.footprint_planet.entity.Plan;
 import com.qzxx.footprint_planet.service.UserService;
 import com.qzxx.footprint_planet.vo.AuthorProfileVO;
+import com.qzxx.footprint_planet.vo.PageVO;
 import com.qzxx.footprint_planet.vo.UserVO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -28,7 +27,9 @@ public class UserController {
     }
 
     @GetMapping("/{id}/plans")
-    public Result<List<Plan>> getPlans(@PathVariable Long id) {
-        return Result.success(userService.getPlans(id));
+    public Result<PageVO<Plan>> getPlans(@PathVariable Long id,
+                                         @RequestParam(defaultValue = "1") Integer page,
+                                         @RequestParam(defaultValue = "10") Integer pageSize) {
+        return Result.success(userService.getPlans(id, page, pageSize));
     }
 }

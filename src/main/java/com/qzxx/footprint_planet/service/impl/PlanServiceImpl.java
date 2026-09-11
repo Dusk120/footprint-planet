@@ -1,17 +1,18 @@
 package com.qzxx.footprint_planet.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.PlanDTO;
 import com.qzxx.footprint_planet.entity.Plan;
 import com.qzxx.footprint_planet.mapper.PlanMapper;
 import com.qzxx.footprint_planet.service.PlanService;
+import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class PlanServiceImpl implements PlanService {
@@ -19,9 +20,13 @@ public class PlanServiceImpl implements PlanService {
     private PlanMapper planMapper;
 
     @Override
-    public List<Plan> getPlans() {
+    public PageVO<Plan> getPlans(Integer page, Integer pageSize) {
         Long userId = BaseContext.getCurrentId();
-        return planMapper.selectList(new QueryWrapper<Plan>().eq("user_id", userId).orderByDesc("created_at"));
+        Page<Plan> p = new Page<>(page, pageSize);
+        p.addOrder(OrderItem.desc("created_at"));
+        Page<Plan> result = planMapper.selectPage(p,
+                new LambdaQueryWrapper<Plan>().eq(Plan::getUserId, userId));
+        return new PageVO<>(result.getRecords(), result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Override

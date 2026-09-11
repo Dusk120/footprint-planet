@@ -3,6 +3,8 @@ package com.qzxx.footprint_planet.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.UpdateProfileDTO;
@@ -15,6 +17,7 @@ import com.qzxx.footprint_planet.mapper.UserMapper;
 import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.UserService;
 import com.qzxx.footprint_planet.vo.AuthorProfileVO;
+import com.qzxx.footprint_planet.vo.PageVO;
 import com.qzxx.footprint_planet.vo.UserVO;
 import jakarta.annotation.Resource;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -111,7 +114,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<Plan> getPlans(Long id) {
-        return planMapper.selectList(new LambdaQueryWrapper<Plan>().eq(Plan::getUserId, id).eq(Plan::getIsPublic, true).orderByDesc(Plan::getCreatedAt));
+    public PageVO<Plan> getPlans(Long id, Integer page, Integer pageSize) {
+        Page<Plan> p = new Page<>(page, pageSize);
+        p.addOrder(OrderItem.desc("created_at"));
+        Page<Plan> result = planMapper.selectPage(p, new LambdaQueryWrapper<Plan>()
+                .eq(Plan::getUserId, id)
+                .eq(Plan::getIsPublic, true));
+        return new PageVO<>(result.getRecords(), result.getTotal(), result.getCurrent(), result.getSize());
     }
 }
