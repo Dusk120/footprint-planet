@@ -1,5 +1,9 @@
 package com.qzxx.footprint_planet.service;
 
-/** 用户反馈提交 */
+import com.qzxx.footprint_planet.dto.request.FeedbackDTO;
+
+
 public interface FeedbackService {
+
+    void submitFeedback(FeedbackDTO feedbackDTO);
 }

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /** 反馈记录（管理端列表） */
 @Data
@@ -18,11 +19,9 @@ public class FeedbackVO {
 
     private String contact;
 
+    private List<String> images;
+
     private Boolean handled;
-
-    private Long userId;
-
-    private String username;
 
     private LocalDateTime createdAt;
 }
