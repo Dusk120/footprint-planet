@@ -9,7 +9,8 @@ import java.util.List;
 public interface VisitedCityService {
     List<VisitedCity> getVisitedCities();
 
-    List<MemoryVO> getMemories();
+    /** 旅行回忆：keyword 为空则返回全量，否则按城市名/省份模糊匹配 */
+    List<MemoryVO> getMemories(String keyword);
 
     VisitedCity addVisitedCity(VisitedCityDTO visitedCityDTO);
 

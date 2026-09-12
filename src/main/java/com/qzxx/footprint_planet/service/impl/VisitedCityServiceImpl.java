@@ -12,7 +12,9 @@ import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.VisitedCityService;
 import com.qzxx.footprint_planet.vo.MemoryVO;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,8 +25,12 @@ import java.util.Map;
 
 @Service
 public class VisitedCityServiceImpl implements VisitedCityService {
+    private static final String KEY = "hot_cities";
     @Resource
     private VisitedCityMapper visitedCityMapper;
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
+
 
     @Override
     public List<VisitedCity> getVisitedCities() {
@@ -33,11 +39,15 @@ public class VisitedCityServiceImpl implements VisitedCityService {
     }
 
     @Override
-    public List<MemoryVO> getMemories() {
+    public List<MemoryVO> getMemories(String keyword) {
         Long userId = BaseContext.getCurrentId();
+        String kw = keyword == null ? null : keyword.trim();
         List<VisitedCity> rows = visitedCityMapper.selectList(
-                new LambdaQueryWrapper<VisitedCity>().eq(VisitedCity::getUserId, userId));
-
+                new LambdaQueryWrapper<VisitedCity>()
+                        .eq(VisitedCity::getUserId, userId)
+                        .and(StringUtils.hasText(kw), w -> w
+                                .like(VisitedCity::getCityName, kw).or()
+                                .like(VisitedCity::getProvince, kw)));
         List<MemoryVO> result = new ArrayList<>();
         for (VisitedCity row : rows) {
             List<Map<String, Object>> records = row.getRecords();
@@ -89,6 +99,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         // 未填游玩时间的记录按本次点亮日期兜底（完全空的记录保留）
         fillRecordDates(visitedCity.getRecords(), visitedCity.getLightDate());
         visitedCityMapper.insert(visitedCity);
+        redisTemplate.delete(KEY);
         return visitedCity;
     }
 
@@ -102,7 +113,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
             throw new BusinessException(403, "无权限修改");
         }
         // 只覆盖前端实际传了的字段，避免把未传的 light_date 等清空
-        BeanUtil.copyProperties(visitedCityDTO, visitedCity, CopyOptions.create().ignoreNullValue());
+        BeanUtil.copyProperties(visitedCityDTO, visitedCity, CopyOptions.create().ignoreNullValue().setIgnoreProperties("cityName"));
         if (visitedCity.getLightDate() == null) {
             visitedCity.setLightDate(LocalDate.now());
         }
@@ -120,6 +131,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         if (!visitedCity.getUserId().equals(BaseContext.getCurrentId())) {
             throw new BusinessException(403, "无权限删除");
         }
+        redisTemplate.delete(KEY);
         visitedCityMapper.deleteById(id);
     }
 

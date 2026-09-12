@@ -23,8 +23,8 @@ public class VisitedCityController {
     }
 
     @GetMapping("/memories")
-    public Result<List<MemoryVO>> getMemories() {
-        return Result.success(visitedCityService.getMemories());
+    public Result<List<MemoryVO>> getMemories(@RequestParam(required = false) String keyword) {
+        return Result.success(visitedCityService.getMemories(keyword));
     }
 
     @PostMapping
