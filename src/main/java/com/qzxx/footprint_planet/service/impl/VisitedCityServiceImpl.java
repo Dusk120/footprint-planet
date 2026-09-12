@@ -35,7 +35,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
     @Override
     public List<VisitedCity> getVisitedCities() {
         Long userId = BaseContext.getCurrentId();
-        return visitedCityMapper.selectList(new QueryWrapper<VisitedCity>().eq("user_id", userId));
+        return visitedCityMapper.selectList(new QueryWrapper<VisitedCity>().eq("user_id", userId).orderByDesc("light_date").orderByDesc("id"));
     }
 
     @Override
