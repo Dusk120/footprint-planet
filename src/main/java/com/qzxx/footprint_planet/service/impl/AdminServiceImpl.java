@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.ResetPasswordDTO;
 import com.qzxx.footprint_planet.dto.request.UpdateUserStatusDTO;
@@ -146,5 +147,83 @@ public class AdminServiceImpl implements AdminService {
             return null;
         }
         throw new BusinessException(404, "用户不存在");
+    }
+
+    @Override
+    public PageVO<AdminNoteVO> getAdminNotes(String keyword, int page, int pageSize) {
+        Page<Note> p = new Page<>(page, pageSize);
+        LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<Note>();
+        queryWrapper.orderByDesc(Note::getCreatedAt);
+        if (keyword != null && !keyword.isEmpty()) {
+            queryWrapper.like(Note::getTitle, keyword).or()
+                    .like(Note::getContent, keyword).or()
+                    .like(Note::getAuthorNickname, keyword);
+        }
+        Page<Note> result = noteMapper.selectPage(p, queryWrapper);
+        List<Note> records = result.getRecords();
+        if (CollectionUtil.isEmpty(records)) {
+            return new PageVO<>(Collections.emptyList(), result.getTotal(), result.getCurrent(), result.getSize());
+        }
+        List<AdminNoteVO> list = records.stream().map(note -> {
+            AdminNoteVO adminNoteVO = new AdminNoteVO();
+            BeanUtil.copyProperties(note, adminNoteVO);
+            adminNoteVO.setAuthor(note.getAuthorNickname());
+            adminNoteVO.setLocation(new LocationVO(note.getLocationName(), note.getLocationProvince()));
+            return adminNoteVO;
+        }).toList();
+        return new PageVO<>(list, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    @Override
+    public Void deleteNote(Long id) {
+        Note note = noteMapper.selectById(id);
+        if (note != null) {
+            noteMapper.deleteById(id);
+        } else {
+            throw new BusinessException(404, "笔记不存在");
+        }
+        return null;
+    }
+
+    @Override
+    public PageVO<FeedbackVO> getFeedbacks(Integer handled, int page, int pageSize) {
+        Page<Feedback> p = new Page<>(page, pageSize);
+        LambdaQueryWrapper<Feedback> queryWrapper = new LambdaQueryWrapper<Feedback>();
+        queryWrapper.orderByDesc(Feedback::getCreatedAt);
+        if (handled != null && (handled == 1 || handled == 0)) {
+            queryWrapper.eq(Feedback::getHandled, handled);
+        }
+        Page<Feedback> result = feedbackMapper.selectPage(p, queryWrapper);
+        List<Feedback> records = result.getRecords();
+        if (CollectionUtil.isEmpty(records)) {
+            return new PageVO<>(Collections.emptyList(), result.getTotal(), result.getCurrent(), result.getSize());
+        }
+        List<FeedbackVO> list = records.stream().map(feedback -> {
+            FeedbackVO feedbackVO = new FeedbackVO();
+            BeanUtil.copyProperties(feedback, feedbackVO);
+            return feedbackVO;
+        }).toList();
+        return new PageVO<>(list, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    @Override
+    public void updateHandled(Long id, boolean handled) {
+        Feedback feedback = feedbackMapper.selectById(id);
+        if (feedback != null) {
+            feedback.setHandled(handled);
+            feedbackMapper.updateById(feedback);
+        } else {
+            throw new BusinessException(404, "反馈不存在");
+        }
+    }
+
+    @Override
+    public void deleteFeedback(Long id) {
+        Feedback feedback = feedbackMapper.selectById(id);
+        if (feedback != null) {
+            feedbackMapper.deleteById(id);
+        } else {
+            throw new BusinessException(404, "反馈不存在");
+        }
     }
 }

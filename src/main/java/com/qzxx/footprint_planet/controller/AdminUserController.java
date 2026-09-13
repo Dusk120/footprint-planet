@@ -18,7 +18,9 @@ public class AdminUserController {
     private AdminService adminService;
 
     @GetMapping
-    public Result<PageVO<AdminUserVO>> getUsers(String keyword, int page, int pageSize) {
+    public Result<PageVO<AdminUserVO>> getUsers(@RequestParam(required = false) String keyword,
+                                                @RequestParam(defaultValue = "1") Integer page,
+                                                @RequestParam(defaultValue = "10") Integer pageSize) {
         return Result.success(adminService.getUsers(keyword, page, pageSize));
     }
 
