@@ -1,23 +1,36 @@
 package com.qzxx.footprint_planet.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.context.BaseContext;
+import com.qzxx.footprint_planet.dto.request.ResetPasswordDTO;
+import com.qzxx.footprint_planet.dto.request.UpdateUserStatusDTO;
 import com.qzxx.footprint_planet.entity.Feedback;
 import com.qzxx.footprint_planet.entity.Note;
+import com.qzxx.footprint_planet.entity.User;
+import com.qzxx.footprint_planet.entity.VisitedCity;
 import com.qzxx.footprint_planet.mapper.FeedbackMapper;
 import com.qzxx.footprint_planet.mapper.NoteMapper;
 import com.qzxx.footprint_planet.mapper.UserMapper;
+import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.AdminService;
 import com.qzxx.footprint_planet.service.HotService;
-import com.qzxx.footprint_planet.vo.AdminDashboardVO;
-import com.qzxx.footprint_planet.vo.HotNoteVO;
-import com.qzxx.footprint_planet.vo.NoteTrendVO;
+import com.qzxx.footprint_planet.vo.*;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -29,6 +42,11 @@ public class AdminServiceImpl implements AdminService {
     private FeedbackMapper feedbackMapper;
     @Resource
     private HotService hotService;
+    @Resource
+    private VisitedCityMapper visitedCityMapper;
+    @Resource
+    private PasswordEncoder passwordEncoder;
+
 
     @Override
     public AdminDashboardVO getAdminDashboard() {
@@ -39,7 +57,7 @@ public class AdminServiceImpl implements AdminService {
         adminDashboardVO.setPendingFeedbackCount(feedbackMapper.selectCount(new LambdaQueryWrapper<Feedback>().eq(Feedback::getHandled, 0)));
         LocalDate now = LocalDate.now();
         List<NoteTrendVO> noteTrendVOList = new ArrayList<>();
-        for(int i=6; i>=0; i--){
+        for (int i = 6; i >= 0; i--) {
             NoteTrendVO noteTrendVO = new NoteTrendVO();
             LocalDate date = now.minusDays(i);
             Long l = noteMapper.selectCount(new LambdaQueryWrapper<Note>().like(Note::getCreatedAt, date));
@@ -58,5 +76,75 @@ public class AdminServiceImpl implements AdminService {
         }).toList();
         adminDashboardVO.setHotNotes(hotNoteVOList);
         return adminDashboardVO;
+    }
+
+    @Override
+    public PageVO<AdminUserVO> getUsers(String keyword, int page, int pageSize) {
+        Page<User> p = new Page<>(page, pageSize);
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<User>();
+        if (keyword != null && !keyword.isEmpty()) {
+            queryWrapper.like(User::getUsername, keyword).or().like(User::getNickname, keyword);
+        }
+        Page<User> result = userMapper.selectPage(p, queryWrapper);
+        List<User> records = result.getRecords();
+        if (CollectionUtil.isEmpty(records)) {
+            return new PageVO<>(Collections.emptyList(), result.getTotal(), result.getCurrent(), result.getSize());
+        }
+        List<Long> userIdList = records.stream().map(User::getId).toList();
+
+        // 统计每个用户笔记数量: authorId -> count
+        Map<Long, Integer> noteMap = noteMapper.selectList(new LambdaQueryWrapper<Note>().
+                        in(Note::getAuthorId, userIdList)).stream().
+                collect(Collectors.groupingBy(Note::getAuthorId, Collectors.summingInt(e -> 1)));
+
+        // 统计每个用户访问城市数量: userId -> count
+        Map<Long, Integer> visitedCityMap = visitedCityMapper.selectList(new LambdaQueryWrapper<VisitedCity>().
+                        in(VisitedCity::getUserId, userIdList)).stream().
+                collect(Collectors.groupingBy(VisitedCity::getUserId, Collectors.summingInt(e -> 1)));
+        List<AdminUserVO> list = records.stream().map(user -> {
+            AdminUserVO adminUserVO = new AdminUserVO();
+            BeanUtil.copyProperties(user, adminUserVO);
+            adminUserVO.setNoteCount(noteMap.getOrDefault(user.getId(), 0));
+            adminUserVO.setVisitedCount(visitedCityMap.getOrDefault(user.getId(), 0));
+            return adminUserVO;
+        }).toList();
+        return new PageVO<>(list, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    @Override
+    public AdminUserDetailVO getUser(Long id) {
+        User user = userMapper.selectById(id);
+        if (user != null) {
+            AdminUserDetailVO adminUserDetailVO = new AdminUserDetailVO();
+            BeanUtil.copyProperties(user, adminUserDetailVO);
+            adminUserDetailVO.setNoteCount(noteMapper.selectCount(new LambdaQueryWrapper<Note>().eq(Note::getAuthorId, user.getId())).intValue());
+            adminUserDetailVO.setVisitedCount(visitedCityMapper.selectCount(new LambdaQueryWrapper<VisitedCity>().eq(VisitedCity::getUserId, user.getId())).intValue());
+            adminUserDetailVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(id));
+            return adminUserDetailVO;
+        }
+        throw new BusinessException(404, "用户不存在");
+    }
+
+    @Override
+    public Void updateStatus(Long id, UpdateUserStatusDTO updateUserStatusDTO) {
+        User user = userMapper.selectById(id);
+        if(user == null)
+            throw new BusinessException(404, "用户不存在");
+        if(id.equals(BaseContext.getCurrentId()))
+            throw new BusinessException(400, "不能修改自己的状态");
+        user.setStatus(updateUserStatusDTO.getStatus());
+        userMapper.updateById(user);
+        return null;
+    }
+
+    @Override
+    public Void updatePassword(Long id, ResetPasswordDTO resetPasswordDTO) {
+        User user = userMapper.selectById(id);
+        if (user != null) {
+            user.setPassword(passwordEncoder.encode(resetPasswordDTO.getPassword()));
+            userMapper.updateById(user);
+            return null;
+        }
+        throw new BusinessException(404, "用户不存在");
     }
 }
