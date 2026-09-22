@@ -25,7 +25,7 @@ public interface AdminService {
 
     PageVO<FeedbackVO> getFeedbacks(Integer handled, int page, int pageSize);
 
-    void updateHandled(Long id, boolean handled);
+    Void updateHandled(Long id, boolean handled);
 
-    void deleteFeedback(Long id);
+    Void deleteFeedback(Long id);
 }

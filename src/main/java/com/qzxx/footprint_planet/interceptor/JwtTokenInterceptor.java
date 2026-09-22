@@ -69,7 +69,12 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         Long userId = Long.valueOf(claims.get("userId").toString());
         String role = claims.get("role").toString();
 
-        //4、实时核对账号状态：token 是无状态的快照，只有每次请求回库确认，
+        //4、鉴权：管理端接口仅 ADMIN 可访问（按路径前缀统一判断，新增 /api/admin/** 接口自动生效）
+        if (request.getRequestURI().startsWith("/api/admin/") && !"ADMIN".equals(role)) {
+            throw new BusinessException(403, "无权限访问");
+        }
+
+        //5、实时核对账号状态：token 是无状态的快照，只有每次请求回库确认，
         //   被禁用（status=1）或已删除的账号才会「下次请求即被拦截」，否则已签发的 token 在整个有效期内都能用。
         if (!isActiveUser(userId)) {
             throw new BusinessException(401, "账号已被禁用");
@@ -77,10 +82,6 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         BaseContext.setCurrentUserId(userId);
         BaseContext.setCurrentUserRole(role);
 
-        //5、鉴权：管理端接口仅 ADMIN 可访问（按路径前缀统一判断，新增 /api/admin/** 接口自动生效）
-        if (request.getRequestURI().startsWith("/api/admin/") && !"ADMIN".equals(role)) {
-            throw new BusinessException(403, "无权限访问");
-        }
         //6、通过，放行
         return true;
     }

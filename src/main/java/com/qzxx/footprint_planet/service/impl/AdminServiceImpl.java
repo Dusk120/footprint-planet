@@ -207,7 +207,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public void updateHandled(Long id, boolean handled) {
+    public Void updateHandled(Long id, boolean handled) {
         Feedback feedback = feedbackMapper.selectById(id);
         if (feedback != null) {
             feedback.setHandled(handled);
@@ -215,15 +215,17 @@ public class AdminServiceImpl implements AdminService {
         } else {
             throw new BusinessException(404, "反馈不存在");
         }
+        return null;
     }
 
     @Override
-    public void deleteFeedback(Long id) {
+    public Void deleteFeedback(Long id) {
         Feedback feedback = feedbackMapper.selectById(id);
         if (feedback != null) {
             feedbackMapper.deleteById(id);
         } else {
             throw new BusinessException(404, "反馈不存在");
         }
+        return null;
     }
 }

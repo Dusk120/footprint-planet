@@ -1,5 +1,6 @@
 package com.qzxx.footprint_planet.dto.request;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
@@ -13,6 +14,7 @@ public class NoteQueryDTO {
     private Integer page = 1;
 
     @Min(value = 1, message = "每页条数不能小于 1")
+    @Max(value = 50, message = "每页条数不能大于 50")
     private Integer pageSize = 6;
 
     /** 排序：latest 最新发布（默认）/ hot 按点赞数 */
