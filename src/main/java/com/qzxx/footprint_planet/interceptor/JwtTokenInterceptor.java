@@ -97,10 +97,11 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         BaseContext.remove();
     }
 
-    /** 免登录公开 GET 路径：社区笔记流、他人主页、他人公开规划、公开规划详情 */
+    /** 免登录公开 GET 路径：社区笔记流、评论列表、他人主页、他人公开规划、公开规划详情 */
     private static boolean isPublicReadPath(String uri) {
         return uri.equals("/api/notes")
                 || uri.equals("/api/hot-destinations")
+                || uri.matches("/api/notes/\\d+/comments")  // 4.5.2 评论列表（带 token 时才算 liked / canDelete）
                 || uri.matches("/api/users/[^/]+")          // 6 他人公开主页
                 || uri.matches("/api/users/[^/]+/plans")    // 7 作者公开规划列表
                 || uri.matches("/api/plans/\\d+");          // 4.4.2 规划详情（私有由 Service 回 404）

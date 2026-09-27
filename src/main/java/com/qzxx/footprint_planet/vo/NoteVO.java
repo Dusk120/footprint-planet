@@ -35,5 +35,7 @@ public class NoteVO {
 
     private Boolean liked;
 
+    private Integer commentCount;
+
     private LocalDateTime createdAt;
 }

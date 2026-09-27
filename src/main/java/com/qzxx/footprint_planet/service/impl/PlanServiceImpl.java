@@ -97,7 +97,7 @@ public class PlanServiceImpl implements PlanService {
         BeanUtil.copyProperties(source, copy);
         copy.setId(null);                       // 重新自增
         copy.setUserId(BaseContext.getCurrentId()); // 归属写当前登录用户
-        copy.setIsPublic(true);                // 副本不延续源公开状态
+        copy.setIsPublic(true);
         copy.setCreatedAt(java.time.LocalDateTime.now());
         planMapper.insert(copy);
         return copy;

@@ -2,6 +2,7 @@ package com.qzxx.footprint_planet.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -12,9 +13,11 @@ import com.qzxx.footprint_planet.dto.request.NoteDTO;
 import com.qzxx.footprint_planet.dto.request.NoteLikeDTO;
 import com.qzxx.footprint_planet.dto.request.NoteQueryDTO;
 import com.qzxx.footprint_planet.entity.Note;
+import com.qzxx.footprint_planet.entity.NoteComment;
 import com.qzxx.footprint_planet.entity.NoteLike;
 import com.qzxx.footprint_planet.entity.User;
 import com.qzxx.footprint_planet.entity.VisitedCity;
+import com.qzxx.footprint_planet.mapper.NoteCommentMapper;
 import com.qzxx.footprint_planet.mapper.NoteLikeMapper;
 import com.qzxx.footprint_planet.mapper.NoteMapper;
 import com.qzxx.footprint_planet.mapper.UserMapper;
@@ -45,6 +48,8 @@ public class NoteServiceImpl implements NoteService {
     @Resource
     private NoteLikeMapper noteLikeMapper;
     @Resource
+    private NoteCommentMapper noteCommentMapper;
+    @Resource
     private UserMapper userMapper;
     @Resource
     private VisitedCityMapper visitedCityMapper;
@@ -71,10 +76,12 @@ public class NoteServiceImpl implements NoteService {
         List<Note> records = resultPage.getRecords();
         Map<Long, User> authorMap = loadAuthors(records);
         Set<Long> likedNoteIds = loadLikedNoteIds(records);
+        Map<Long, Integer> commentCountMap = loadCommentCounts(records);
 
         List<NoteVO> list = new ArrayList<>();
         for (Note note : records) {
-            list.add(toVO(note, authorMap.get(note.getAuthorId()), likedNoteIds.contains(note.getId())));
+            list.add(toVO(note, authorMap.get(note.getAuthorId()), likedNoteIds.contains(note.getId()),
+                    commentCountMap.getOrDefault(note.getId(), 0)));
         }
 
         PageVO<NoteVO> pageVO = new PageVO<>();
@@ -108,7 +115,7 @@ public class NoteServiceImpl implements NoteService {
         note.setLikes(0);
         note.setCreatedAt(java.time.LocalDateTime.now());
         noteMapper.insert(note);
-        return toVO(note, user, false);
+        return toVO(note, user, false, 0);
     }
 
     @Override
@@ -171,6 +178,42 @@ public class NoteServiceImpl implements NoteService {
                 .stream().map(NoteLike::getNoteId).collect(Collectors.toSet());
     }
 
+    /**
+     * 一次查出当页笔记的评论数（含回复），避免逐条 count。
+     * 不用 join，单独一条 group by 查询即可。
+     */
+    private Map<Long, Integer> loadCommentCounts(List<Note> notes) {
+        if (notes.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> noteIds = notes.stream().map(Note::getId).toList();
+        QueryWrapper<NoteComment> wrapper = new QueryWrapper<>();
+        wrapper.select("note_id", "COUNT(*) AS cnt")
+                .in("note_id", noteIds)
+                .groupBy("note_id");
+        Map<Long, Integer> map = new HashMap<>();
+        for (Map<String, Object> row : noteCommentMapper.selectMaps(wrapper)) {
+            Long noteId = null;
+            Integer cnt = null;
+            // 列标签大小写随驱动而定，这里统一转小写再取
+            for (Map.Entry<String, Object> e : row.entrySet()) {
+                String k = e.getKey().toLowerCase();
+                if (e.getValue() == null) {
+                    continue;
+                }
+                if ("note_id".equals(k)) {
+                    noteId = ((Number) e.getValue()).longValue();
+                } else if ("cnt".equals(k)) {
+                    cnt = ((Number) e.getValue()).intValue();
+                }
+            }
+            if (noteId != null && cnt != null) {
+                map.put(noteId, cnt);
+            }
+        }
+        return map;
+    }
+
     /** 一次查出当页笔记的作者，避免逐条查询 */
     private Map<Long, User> loadAuthors(List<Note> notes) {
         Set<Long> authorIds = notes.stream()
@@ -187,7 +230,7 @@ public class NoteServiceImpl implements NoteService {
         return authorMap;
     }
 
-    private NoteVO toVO(Note note, User author, boolean liked) {
+    private NoteVO toVO(Note note, User author, boolean liked, int commentCount) {
         NoteVO vo = new NoteVO();
         vo.setId(note.getId());
         vo.setTitle(note.getTitle());
@@ -199,6 +242,7 @@ public class NoteServiceImpl implements NoteService {
         vo.setAuthorAvatar(author != null ? author.getAvatar() : User.DEFAULT_AVATAR);
         vo.setLikes(note.getLikes());
         vo.setLiked(liked);
+        vo.setCommentCount(commentCount);
         vo.setCreatedAt(note.getCreatedAt());
         if (note.getLocationName() != null || note.getLocationProvince() != null) {
             vo.setLocation(new LocationVO(note.getLocationName(), note.getLocationProvince()));
