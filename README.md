@@ -1,10 +1,11 @@
 # Footprint Planet · 足迹星球（后端服务）
 
-「足迹星球」是一款旅行足迹 / 旅行社区 Web 应用的**后端服务**：用户可以点亮去过城市、记录旅游规划、发布笔记并互相点赞，管理员可在管理端进行用户、笔记与反馈管理。配套前端见 `footprint-planet`（Vue 3）仓库。
+「足迹星球」是一款旅行足迹 / 旅行社区 Web 应用：用户点亮去过的城市、按时间轴回顾旅行回忆、编排旅游规划、在社区发布笔记并互相点赞评论，管理员在管理端进行用户、笔记与反馈治理。本仓库同时存放**后端服务**（根目录，Spring Boot）与**前端**（`frontend/`，Vue 3）。
 
 - 项目类型：课程综合实践
 - 运行环境：JDK 17、Maven 3.9+
 - 基础路径：`/api`，认证方式：`Authorization: Bearer <token>`
+- 接口契约：[`docs/足迹星球后端接口文档.md`](docs/足迹星球后端接口文档.md)（v1.4，共 **40 个接口**：30 用户端 + 10 管理端）
 
 ## 技术栈
 
@@ -12,98 +13,102 @@
 | --- | --- |
 | 框架 | Spring Boot 4.1.1（内嵌 Jackson 3）、Spring MVC |
 | 持久层 | MyBatis-Plus `mybatis-plus-spring-boot4-starter` 3.5.17 + jsqlparser 分页插件 |
-| 数据库 | MySQL 8+（utf8mb4） |
-| 缓存 | Redis（`spring-boot-starter-data-redis`，预留；本机未启用也可正常启动） |
+| 数据库 | MySQL 8+（utf8mb4，8 张表） |
+| 缓存 | Redis（图形验证码、热门目的地 Top5 缓存），本机未启用不影响其它功能 |
 | 安全 | JWT（jjwt 0.12.6）+ BCrypt（spring-security-crypto，仅加密不引入 Security 过滤器链） |
-| 对象存储 | 阿里云 OSS（aliyun-sdk-oss 3.18.5，图片上传） |
+| 对象存储 | 阿里云 OSS（aliyun-sdk-oss 3.18.5，笔记配图 / 城市照片 / 头像） |
+| 验证码 | hutool-captcha 5.8.47（`LineCaptcha` 生成，答案明文存 Redis，TTL 2 分钟，校验通过即删除） |
 | 参数校验 | Bean Validation（jakarta.validation） |
 | 接口风格 | RESTful，统一返回体 `{ code, message, data }` |
-
-## 当前进度
-
-> 说明：项目采用「分层骨架先行、业务后置」的推进方式。以下均已落地并通过 `mvn test`：
-
-- [x] 分层包结构（Controller / Service / ServiceImpl / Mapper / DTO / VO / 实体）
-- [x] 配置重构：`application.yml`（公共/占位） + `application-dev.yml`（账号密码集中）双 profile
-- [x] 公共件：`Result` 统一返回、`BusinessException`、`GlobalExceptionHandler` 全局异常处理
-- [x] 基础设施配置：`RedisConfig`（Jackson 3 序列化）、`MybatisPlusConfig`（分页插件）、`OssProperties` + `OssService` + `UploadController`
-- [x] 6 个 Mapper、7 组 Service 接口与空实现、11 个 Controller 空壳（路由前缀就位）
-- [ ] 业务逻辑实现：认证（登录/注册/JWT 拦截器含 role/status 校验）、笔记/点赞、管理端统计等
-- [ ] Jackson 时间格式统一为 `yyyy-MM-dd HH:mm:ss`
-
-> 接口契约以配套文档《足迹星球后端接口文档》(v1.2) 为准。
 
 ## 功能模块
 
 **用户端**
 
-- 认证：注册 / 登录（Bearer token）
-- 个人中心：资料与密码修改、我的足迹与统计数据、他人主页
-- 足迹城市：点亮 / 编辑 / 删除去过城市，地图联动
-- 旅游规划：增删改查，支持公开规划浏览
-- 社区笔记：发布（配图走 OSS）、列表分页、点赞 / 取消点赞、热门笔记
-- 热门目的地：按点亮人数动态统计 Top 5（无需额外表）
-- 建议反馈：提交反馈 / 查看处理结果
+- **账号认证**：图形验证码（`GET /api/captcha`，明文存 Redis）→ 注册 / 登录 / 登出；JWT 无状态鉴权，拦截器每次请求回库核对账号状态，`status=1` 的账号即时失效
+- **个人中心**：资料与密码修改（含头像上传）、我的足迹与统计数据、我的笔记、我的规划
+- **足迹点亮**：点亮 / 编辑 / 取消点亮城市；每座城市可设**主题色**（12 色板）、推荐指数、多次游玩记录（日期 + 照片）。前端地图按城市主题色整市涂色，直辖市按省级 adcode 归一
+- **旅行回忆**：把各城市的游玩记录按时间轴展平返回，供前端「时间隧道」回顾；支持按城市名 / 省份搜索，按年份筛选
+- **旅游规划**：增删改查、公开 / 私有；**复制他人公开规划**（副本同样公开）；作者公开规划列表（分页）
+- **社区笔记**：发布（配图走 OSS，地点须为本人已点亮城市）、列表分页 + 关键词搜索 + 最新 / 最热排序、点赞 / 取消点赞、删除自己的笔记
+- **评论互动**：评论列表（**分页只作用于顶层评论**，回复随父评论返回）、发布评论 / 一级回复、评论与回复均可点赞、按权限删除；`liked` / `canDelete` 由后端按 JWT 算好下发
+- **作者主页**：`GET /api/users/{id}` 返回资料 + 统计，配合公开笔记与公开规划列表
+- **热门目的地**：按点亮人数动态统计 Top5（Redis 缓存 24h，新增 / 删除点亮时失效）
+- **建议反馈**：匿名提交（内容 + 联系方式 + 截图）
 
-**管理端**（`/api/admin/**`，需 role=ADMIN）
+**管理端**（`/api/admin/**`，需 `role=ADMIN`）
 
-- 仪表盘：用户数 / 笔记数 / 反馈数 / 待处理数 / 趋势 / 热门城市 / 热门笔记
-- 用户管理：列表、禁用 / 启用（`status` 0/1）、重置密码
-- 笔记管理：全量列表、删除
-- 反馈管理：列表（含用户信息）、标记处理
+- **仪表盘**：用户 / 笔记 / 反馈总量与待处理数、笔记趋势、热门城市、热门笔记
+- **用户管理**：列表（分页 / 搜索）、用户详情（含内容统计）、禁用 / 启用账号、重置密码
+- **笔记管理**：全站笔记列表（分页 / 搜索）、删除违规笔记。**评论治理不另设接口**——管理员在社区页 / 笔记详情内即可删除任意评论（用户端删除评论接口的 `canDelete` 对管理员恒为 `true`）
+- **反馈管理**：列表（按处理状态筛选）、标记已处理、删除
 
 ## 目录结构
 
 ```
 Footprint_planet
-├─ pom.xml
-└─ src/main/java/com/qzxx/footprint_planet
-   ├─ FootprintPlanetApplication.java     # 启动类（@MapperScan 已配）
-   ├─ common/        # Result / BusinessException / GlobalExceptionHandler
-   ├─ config/        # RedisConfig / MybatisPlusConfig / OssProperties
-   ├─ controller/    # REST 路由（/api/... 域前缀）
-   ├─ service/       # Service 接口 + impl/ 实现
-   ├─ mapper/        # BaseMapper 子接口（对应 6 张表）
-   ├─ dto/request/   # 入参 Record（jakarta 校验注解）
-   ├─ vo/            # 出参 Record（含泛型分页 PageVO<T>）
-   └─ entity/        # 实体（camelCase ↔ 下划线自动映射）
-src/main/resources
-   ├─ application.yml      # 公共配置 + 占位符 + JWT 密钥
-   └─ application-dev.yml  # ★ 本地账号密码集中填写处（MySQL / Redis / OSS）
-src/test/java/...          # 上下文装配测试
+├─ pom.xml / mvnw / mvnw.cmd
+├─ docs/
+│  └─ 足迹星球后端接口文档.md      # 接口契约（v1.4，40 个接口）
+├─ sql/
+│  └─ footprint_planet.sql         # 建库脚本 + 演示数据（v1.4，8 张表）
+├─ frontend/                       # 前端（Vue 3 + Vite + Pinia + ECharts）
+│  ├─ src/                         # 源码；node_modules/ 与 dist/ 已被 .gitignore 忽略
+│  └─ vite.config.js               # dev 代理 /api → localhost:8080
+└─ src/main/
+   ├─ java/com/qzxx/footprint_planet
+   │  ├─ FootprintPlanetApplication.java  # 启动类（@MapperScan 已配）
+   │  ├─ common/         # Result / BusinessException / GlobalExceptionHandler
+   │  ├─ config/         # RedisConfig / MybatisPlusConfig / WebMvcConfiguration
+   │  │                  # JwtProperties / OssProperties / SecurityConfig / OpenApiConfig
+   │  ├─ context/        # BaseContext（ThreadLocal 持有当前用户 id / role）
+   │  ├─ interceptor/    # JwtTokenInterceptor（解析 token、回库校验状态、管理端鉴权）
+   │  ├─ controller/     # 14 个 REST 控制器
+   │  ├─ service/        # Service 接口 + impl/ 下实现（OssService 直接实现为类，无独立接口）
+   │  ├─ mapper/         # 8 个 BaseMapper 子接口（对应 8 张表）
+   │  ├─ dto/request/    # 15 个入参对象（jakarta 校验注解）
+   │  ├─ vo/             # 18 个出参对象（含泛型分页 PageVO<T>）
+   │  ├─ entity/         # 8 个实体（camelCase ↔ 下划线自动映射）
+   │  └─ utils/          # JwtUtil（签发 / 解析）
+   └─ resources
+      ├─ application.yml              # 公共配置（占位符引用 + 默认 dev profile）
+      ├─ application-dev.yml.example  # ★ 本地配置模板（MySQL / Redis / JWT / OSS）
+      └─ application-dev.yml          # 由模板复制而来，已被 .gitignore 忽略
 ```
 
 ## 核心约定
 
-- **统一返回体**：成功 `{ code: 0, message: "ok", data: ... }`；失败 HTTP 一律 200、`code` 非 0 表示错误类别，与前端 `http.js` 解包约定吻合。
-- **错误码**：`400` 参数/业务错误、`401` 未认证、`403` 无权限、`404` 不存在、`500` 服务器异常。
-- **权限**：普通接口需登录（JWT），管理端接口额外校验 `role=ADMIN`；`status=1` 的禁用账号不可登录。
+- **统一返回体**：成功 `{ code: 0, message: "ok", data: ... }`；**失败 HTTP 状态码也一律是 200**，用 `code` 表示错误类别 —— 前端 `http.js` 据此解包，并在抛出的 error 上附带 `err.code`，以便区分业务码与 HTTP 码。
+- **错误码**：`400` 参数 / 业务错误、`401` 未认证、`403` 无权限、`404` 不存在、`500` 服务器异常。
+- **权限**：普通接口需登录（JWT）；管理端按**路径前缀** `/api/admin/` 统一校验 `role=ADMIN`，新增管理端接口自动生效。
+- **公开读接口**：笔记列表、评论列表、他人主页、热门目的地等允许匿名访问，带 token 时会额外算出 `liked` / `canDelete` 等与「当前用户」相关的字段；账号被禁用时按匿名处理。
 - **密码**：BCrypt 加密存储；接口响应从不回传 `password`。
 - **JSON 列**：`note.photos`、`plan.days/waypoints`、`visited_city.records` 以 JSON 存储，走 `JacksonTypeHandler` 读写 `List` / `List<Map>`。
-- **分页**：`PageVO { list, total, page, pageSize }`，由 MyBatis-Plus 分页插件输出。
+- **分页**：`PageVO { list, total, page, pageSize }`，由 MyBatis-Plus 分页插件输出；评论接口的 `total` 是**顶层评论**数（不含回复）。
+- **外键与级联**：评论树用自引用外键实现一级回复，删除笔记 / 评论时其回复与点赞由 `ON DELETE CASCADE` 自动清理，应用层不必手写递归删除。
 
 ## 数据库
 
-建库脚本为 v1.2（6 张表，含演示数据），先建库再导入：
+建库脚本为 `sql/footprint_planet.sql`（v1.4，**8 张表**，含演示数据）。脚本开头是 `DROP DATABASE IF EXISTS footprint_planet;` 接 `CREATE DATABASE` + `USE`，**即整库重建，不需要手工建库**。
 
-```sql
-CREATE DATABASE footprint_planet DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+> ⚠️ 正因为它会 DROP 同名库，**导入前请确认 `footprint_planet` 里没有需要保留的数据**（换机器重装、或想拿演示数据覆盖时正好适用）。
 
-Windows 命令行导入建议显式指定字符集，避免中文乱码：
+Windows 命令行导入（务必显式指定字符集，否则中文乱码）：
 
 ```bash
-mysql -uroot -p --default-character-set=utf8mb4 footprint_planet < footprint_planet.sql
+mysql -uroot -p --default-character-set=utf8mb4 < sql/footprint_planet.sql
 ```
 
 | 表 | 作用 |
 | --- | --- |
 | `user` | 用户（`role`: ADMIN/USER；`status`: 0 正常 / 1 禁用） |
-| `visited_city` | 点亮过的城市，`records` 存旅行回忆 |
+| `visited_city` | 点亮过的城市，`records` 存旅行回忆，`color` 存主题色 |
 | `plan` | 旅游规划（`days` / `waypoints` 为 JSON） |
 | `note` | 社区笔记（`photos` 为 JSON，冗余 `author_nickname` / `location_*` 便于列表展示） |
-| `note_like` | 笔记点赞关系 |
-| `feedback` | 建议反馈（`handled`: 处理状态） |
+| `note_like` | 笔记点赞关系（`(note_id, user_id)` 唯一，保证一人一赞） |
+| `note_comment` | 评论；`parent_id` **自引用** `note_comment(id)`，非空即一级回复 |
+| `comment_like` | 评论（含回复）点赞关系（`(comment_id, user_id)` 唯一） |
+| `feedback` | 建议反馈（匿名提交，不记录用户；`handled`: 处理状态） |
 
 **演示账号**（密码均为 `123456`）：`admin`（管理员，角色 ADMIN）、`xiaoA`、`zhangsan`、`zhuiguangzhe`、`xinghe`（普通用户，角色 USER）。
 
@@ -112,36 +117,33 @@ mysql -uroot -p --default-character-set=utf8mb4 footprint_planet < footprint_pla
 ### 1. 准备
 
 - JDK 17、Maven 3.9+；
-- MySQL 已建好 `footprint_planet` 库并导入上述脚本；
+- MySQL 已导入 `sql/footprint_planet.sql`（脚本会自动 DROP + CREATE `footprint_planet`，无需手工建库）；
+- Redis 可选（不启动时验证码与热门城市缓存不可用，其余功能正常）；
 - 图片上传依赖阿里云 OSS，未配置密钥时上传接口不可用（不影响登录等其它功能）。
 
 ### 2. 配置账号密码（关键）
 
-所有环境相关敏感配置集中在 `src/main/resources/application-dev.yml`，请填写：
+所有环境相关的敏感配置集中在 `application-dev.yml`，该文件**已被 `.gitignore` 忽略**（仓库里只有模板）。首次运行先复制模板再填写：
 
-```yaml
-footprint:
-  datasource:
-    username: root            # 本地 MySQL 账号
-    password: 123456          # 本地 MySQL 密码
-  redis:
-    host: localhost           # 无 Redis 则留默认即可，服务不依赖它启动
-    port: 6379
-aliyun:
-  oss:
-    access-key-id: xxx        # OSS 密钥（占位，未开通则保持占位）
-    access-key-secret: xxx
-    bucket-name: xxx
-    url-prefix: https://xxx.oss-cn-hangzhou.aliyuncs.com
+```bash
+cp src/main/resources/application-dev.yml.example src/main/resources/application-dev.yml
 ```
 
-- `application.yml` 默认激活 `dev` profile，部署新环境时可复制 `application-dev.yml` 为 `application-{env}.yml` 再切换。
-- `application.yml` 中 `footprint.jwt.secret / expiration` 为 JWT 签名密钥与有效期，生产部署请更换。
+需要填写的项（模板里已逐项留注释）：
+
+| 配置项 | 说明 |
+| --- | --- |
+| `footprint.datasource.*` | MySQL 连接：`host` / `port` / `database` / `username` / `password`（`driver-class-name` 模板已给默认值） |
+| `footprint.redis.*` | Redis 连接：`host` / `port` / `password`（本机无密码可留空） |
+| `footprint.jwt.secret-key` / `ttl` | JWT 签名密钥与有效期（毫秒，模板默认 7200000 = 2 小时），生产部署请更换密钥 |
+| `aliyun.oss.*` | OSS `endpoint` / `access-key-id` / `access-key-secret` / `bucket-name` / `url-prefix` |
+
+- `application.yml` 只放公共配置，通过 `${footprint.*}` 占位符引用上述值，并默认激活 `dev` profile；部署新环境时复制一份 `application-{env}.yml` 再切换即可。
 
 ### 3. 运行
 
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run        # Windows CMD / PowerShell 用 mvnw.cmd spring-boot:run
 # 或 IDE 中直接运行 com.qzxx.footprint_planet.FootprintPlanetApplication
 ```
 
@@ -149,18 +151,28 @@ mvn spring-boot:run
 
 ### 4. 验证
 
+登录**必须携带图形验证码**（先取 uuid，再拿该 uuid 对应的明文；正常流程是人工识别图片里的字符）：
+
 ```bash
+# 1) 取验证码，返回 { uuid, img }，img 是可直接塞进 <img src> 的 data URI
+curl -s http://localhost:8080/api/captcha
+
+# 2) 开发环境图省事，直接从 Redis 读明文（Redis 不可用时该接口会报错）
+#    答案 TTL 仅 2 分钟，且校验通过后立即删除，需在两步之间尽快完成
+redis-cli GET captcha:<uuid>
+
+# 3) 登录
 curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"123456"}'
-# => {"code":0,"message":"ok","data":{...token...}}
+  -d '{"username":"admin","password":"123456","uuid":"<uuid>","code":"<code>"}'
+# => {"code":0,"message":"ok","data":{"token":"...","user":{...}}}
 ```
 
 ## 关联资源
 
-- 前端仓库：`footprint-planet`（Vue 3 + Vite + Pinia，Vite dev 代理 `/api` → `localhost:8080`）
-- 接口文档：《足迹星球后端接口文档》(v1.2，33 接口)
-- 建库脚本：`footprint_planet.sql`（v1.2）
+- 前端：[`frontend/`](frontend/)（Vue 3 + Vite + Pinia + ECharts）。启动：`cd frontend && npm install && npm run dev`，访问 `http://localhost:5173`；Vite 已配代理 `/api` → `localhost:8080`，需后端先启动
+- 接口文档：[`docs/足迹星球后端接口文档.md`](docs/足迹星球后端接口文档.md)（v1.4，40 个接口）
+- 建库脚本：[`sql/footprint_planet.sql`](sql/footprint_planet.sql)（v1.4，8 张表 + 演示数据）
 
 ## License
 

@@ -1,0 +1,348 @@
+:root {
+  --bg-deep: #0a0e27;
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --bg-card-hover: rgba(255, 255, 255, 0.10);
+  --bg-glass: rgba(255, 255, 255, 0.08);
+  --bg-glass-border: rgba(255, 255, 255, 0.12);
+  /* 需要真正看得见的边框（虚线上传框之类）。比 --bg-glass-border 明显一档，
+     浅色主题下必须翻成深色，否则白框画在白底上等于没有 */
+  --border-strong: rgba(255, 255, 255, 0.22);
+  /* 「往底色上叠一层」的叠加色分量。
+     全站原来散着 50 多处写死的 rgba(255,255,255,x) 当边框和底色用 ——
+     深色主题下是"叠白"，浅色主题下必须变成"叠黑"，否则全都是白框白底。
+     写成 rgba(var(--overlay-rgb), x) 就能保留各自原有的透明度，只翻转色相 */
+  --overlay-rgb: 255, 255, 255;
+
+  --accent-blue: #38bdf8;
+  --accent-purple: #0ea5e9;
+  --accent-cyan: #38bdf8;
+  --accent-gradient: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  --accent-gradient-h: linear-gradient(90deg, #38bdf8, #0ea5e9);
+
+  --text-primary: #f1f5f9;
+  --text-secondary: rgba(241, 245, 249, 0.7);
+  --text-muted: rgba(241, 245, 249, 0.45);
+
+  --sidebar-width: 240px;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.3);
+
+  /* 对话框主题色 */
+  --dialog-bg: #141a3d;
+  --dialog-border: rgba(255, 255, 255, 0.14);
+  --dialog-divider: rgba(255, 255, 255, 0.08);
+  --dialog-input-bg: rgba(255, 255, 255, 0.06);
+  --dialog-input-border: rgba(255, 255, 255, 0.12);
+  --dialog-cancel-bg: rgba(255, 255, 255, 0.08);
+  --dialog-cancel-hover: rgba(255, 255, 255, 0.14);
+  --dialog-day-bg: rgba(255, 255, 255, 0.03);
+  --dialog-day-border: rgba(255, 255, 255, 0.06);
+  --dialog-item-bg: rgba(255, 255, 255, 0.04);
+  --dialog-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="light"] {
+  --bg-deep: #f0f2f5;
+  --bg-card: rgba(0, 0, 0, 0.04);
+  --bg-card-hover: rgba(0, 0, 0, 0.07);
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-glass-border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.18);
+  --overlay-rgb: 0, 0, 0;
+
+  --text-primary: #1e293b;
+  --text-secondary: rgba(30, 41, 59, 0.7);
+  --text-muted: rgba(30, 41, 59, 0.45);
+
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.15);
+
+  /* 对话框主题色 */
+  --dialog-bg: #ffffff;
+  --dialog-border: rgba(0, 0, 0, 0.1);
+  --dialog-divider: rgba(0, 0, 0, 0.08);
+  --dialog-input-bg: rgba(0, 0, 0, 0.04);
+  --dialog-input-border: rgba(0, 0, 0, 0.12);
+  --dialog-cancel-bg: rgba(0, 0, 0, 0.06);
+  --dialog-cancel-hover: rgba(0, 0, 0, 0.1);
+  --dialog-day-bg: rgba(0, 0, 0, 0.02);
+  --dialog-day-border: rgba(0, 0, 0, 0.06);
+  --dialog-item-bg: rgba(0, 0, 0, 0.03);
+  --dialog-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius);
+}
+
+.gradient-text {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-btn {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+}
+.gradient-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(56, 189, 248, 0.55);
+}
+
+.stat-number {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+/* 路由过渡动画 */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* 基础响应式 */
+@media (max-width: 900px) {
+  :root {
+    --sidebar-width: 72px;
+  }
+}
+
+/* ===== 通用对话框 ===== */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 30, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 24px;
+}
+
+.dialog {
+  width: 460px;
+  max-width: 100%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--dialog-bg);
+  border: 1px solid var(--dialog-border);
+  box-shadow: var(--dialog-shadow);
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--dialog-divider);
+}
+.dialog-emoji { font-size: 26px; line-height: 1; }
+.dialog-title-wrap { flex: 1; min-width: 0; }
+.dialog-title { font-size: 20px; font-weight: 800; }
+.dialog-sub { font-size: 12px; color: var(--text-muted); }
+
+.dialog-mode {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+}
+.mode-add { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; }
+.mode-edit { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+
+.dialog-body {
+  padding: 18px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-label { font-size: 13px; color: var(--text-secondary); }
+.req { color: #f87171; }
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--dialog-divider);
+}
+.divider-label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+
+.text-input {
+  background: var(--dialog-input-bg);
+  border: 1px solid var(--dialog-input-border);
+  border-radius: var(--radius-xs);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: var(--transition);
+  color-scheme: light dark;
+}
+.text-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+}
+.text-input::placeholder { color: var(--text-muted); }
+.text-input.textarea { resize: none; line-height: 1.6; }
+
+.dialog-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 22px;
+  border-top: 1px solid var(--dialog-divider);
+}
+.btn-cancel,
+.btn-confirm {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+.btn-cancel {
+  background: var(--dialog-cancel-bg);
+  color: var(--text-secondary);
+}
+.btn-cancel:hover { background: var(--dialog-cancel-hover); color: var(--text-primary); }
+.btn-confirm {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+}
+.btn-confirm:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(56, 189, 248, 0.55); }
+.btn-confirm:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+/* 图片选择 */
+.photos { display: flex; flex-wrap: wrap; gap: 8px; }
+.photo {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-del {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.photo-del:hover { background: rgba(239, 68, 68, 0.85); }
+.photo-add {
+  width: 76px;
+  height: 76px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 22px;
+  transition: var(--transition);
+}
+.photo-add:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+

@@ -32,5 +32,12 @@ build/
 ### VS Code ###
 .vscode/
 
-# 实际开发配置文件，不提交
+### 前端 frontend/（Vue 3 + Vite）###
+# 不带前导斜杠 => 匹配任意层级，前端目录改什么名字都兜得住，
+# 也不依赖 frontend/.gitignore 是否存在
+node_modules/
+dist/
+*.log
+
+# 实际开发配置文件（含数据库密码 / JWT 密钥 / OSS 密钥），不提交
 src/main/resources/application-dev.yml
