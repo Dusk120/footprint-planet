@@ -3,6 +3,11 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { useAppStore } from './stores/app'
+// 全局字体：IBM Plex Sans（仅 latin 子集，中文回退系统字体）
+import '@fontsource/ibm-plex-sans/latin-400.css'
+import '@fontsource/ibm-plex-sans/latin-500.css'
+import '@fontsource/ibm-plex-sans/latin-600.css'
+import '@fontsource/ibm-plex-sans/latin-700.css'
 import './styles/global.css'
 import './styles/admin.css'
 

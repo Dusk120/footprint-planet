@@ -193,7 +193,7 @@ function handleLike() {
   margin-left: auto;
   background: rgba(248, 113, 113, 0.14);
   border: 1px solid rgba(248, 113, 113, 0.5);
-  color: #f87171;
+  color: var(--danger);
   font-size: 13px;
   font-weight: 600;
   padding: 8px 14px;
@@ -202,7 +202,7 @@ function handleLike() {
 }
 .delete-note-btn:hover {
   background: rgba(248, 113, 113, 0.28);
-  border-color: #f87171;
+  border-color: var(--danger);
   box-shadow: 0 0 12px rgba(248, 113, 113, 0.35);
 }
 
@@ -428,12 +428,12 @@ function handleLike() {
 }
 .detail-like-btn:hover {
   background: rgba(248, 113, 113, 0.1);
-  color: #f87171;
+  color: var(--danger);
 }
 .detail-like-btn.liked {
   background: rgba(248, 113, 113, 0.15);
   border-color: rgba(248, 113, 113, 0.3);
-  color: #f87171;
+  color: var(--danger);
 }
 
 @media (max-width: 900px) {

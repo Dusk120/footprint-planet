@@ -155,7 +155,7 @@ function formatKm(n) {
   color: var(--text-muted);
   font-size: 14px;
 }
-.drawer-tip.err { color: #f87171; }
+.drawer-tip.err { color: var(--danger); }
 
 .u-head {
   display: flex;

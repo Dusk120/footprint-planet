@@ -213,7 +213,7 @@ function handleConfirm() {
 
 .day-remove {
   font-size: 12px;
-  color: #f87171;
+  color: var(--danger);
   background: none;
   padding: 4px 8px;
   border-radius: var(--radius-xs);
@@ -248,7 +248,7 @@ function handleConfirm() {
   flex-shrink: 0;
   transition: var(--transition);
 }
-.item-remove:hover { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+.item-remove:hover { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
 
 .add-item-btn {
   align-self: flex-start;
@@ -296,7 +296,7 @@ function handleConfirm() {
   align-items: center;
   justify-content: center;
 }
-.wp-remove:hover { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+.wp-remove:hover { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
 
 .waypoint-add {
   display: flex;

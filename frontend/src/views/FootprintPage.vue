@@ -123,7 +123,7 @@ async function confirmRemove() {
                 <defs>
                   <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stop-color="#38bdf8"/>
-                    <stop offset="100%" stop-color="#0ea5e9"/>
+                    <stop offset="100%" stop-color="#6366f1"/>
                   </linearGradient>
                 </defs>
               </svg>
@@ -580,7 +580,7 @@ async function confirmRemove() {
   border-radius: var(--radius-pill);
   background: rgba(248, 113, 113, 0.1);
   border: 1px solid rgba(248, 113, 113, 0.25);
-  color: #f87171;
+  color: var(--danger);
   font-size: 12px;
   font-weight: 600;
   transition: var(--transition);
@@ -603,6 +603,25 @@ async function confirmRemove() {
   }
   .info-panel {
     width: 260px;
+  }
+}
+
+/* 移动端：隐藏地图，信息面板全宽；城市选择走 CityLightDialog 搜索列表，查看走「已点亮城市」弹层 */
+@media (max-width: 640px) {
+  .footprint-page {
+    padding: 16px;
+    gap: 16px;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .map-section {
+    display: none;
+  }
+  .info-panel {
+    width: 100%;
   }
 }
 

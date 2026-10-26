@@ -210,7 +210,7 @@ function handleThemeToggle() {
 }
 
 .logout-btn:hover {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 @media (max-width: 900px) {

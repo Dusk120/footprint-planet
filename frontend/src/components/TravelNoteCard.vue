@@ -16,7 +16,7 @@ const emit = defineEmits(['like', 'click'])
       <NoteCover :note="note" />
       <div class="note-overlay">
         <button class="like-btn" :class="{ liked: props.liked }" @click.stop="emit('like')">
-          <svg width="16" height="16" viewBox="0 0 24 24" :fill="props.liked ? '#f87171' : 'white'" stroke="none">
+          <svg width="16" height="16" viewBox="0 0 24 24" :style="{ fill: props.liked ? 'var(--danger)' : 'white' }" stroke="none">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
         </button>
@@ -167,5 +167,5 @@ const emit = defineEmits(['like', 'click'])
 .note-comments .stat-icon {
   fill: var(--text-muted);
 }
-.note-likes.liked .stat-icon { fill: #f87171; }
+.note-likes.liked .stat-icon { fill: var(--danger); }
 </style>

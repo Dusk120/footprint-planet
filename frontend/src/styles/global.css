@@ -14,10 +14,15 @@
   --overlay-rgb: 255, 255, 255;
 
   --accent-blue: #38bdf8;
-  --accent-purple: #0ea5e9;
-  --accent-cyan: #38bdf8;
-  --accent-gradient: linear-gradient(135deg, #38bdf8, #0ea5e9);
-  --accent-gradient-h: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  --accent-secondary: #6366f1;
+  --accent-gradient: linear-gradient(135deg, #38bdf8, #6366f1);
+  --accent-gradient-h: linear-gradient(90deg, #38bdf8, #6366f1);
+
+  /* 功能语义色：统一全站散落的成功 / 警告 / 危险硬编码 */
+  --success: var(--success);
+  --warning: #f59e0b;
+  --danger: var(--danger);
+  --danger-deep: var(--danger-deep);
 
   --text-primary: #f1f5f9;
   --text-secondary: rgba(241, 245, 249, 0.7);
@@ -91,7 +96,7 @@ html, body, #app {
 }
 
 body {
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'IBM Plex Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   background: var(--bg-deep);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -240,7 +245,7 @@ button {
 
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field-label { font-size: 13px; color: var(--text-secondary); }
-.req { color: #f87171; }
+.req { color: var(--danger); }
 
 .section-divider {
   display: flex;
@@ -345,4 +350,23 @@ button {
   transition: var(--transition);
 }
 .photo-add:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+
+/* ===== 无障碍 ===== */
+/* 键盘导航焦点可见性：图标按钮 / 链接统一补 focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+/* 用户偏好减少动效时，关闭全站过渡与动画（覆盖页面切换、星空闪烁、hover 过渡等） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 

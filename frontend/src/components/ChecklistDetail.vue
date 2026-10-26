@@ -151,7 +151,7 @@ function formatDate(d) {
   transition: var(--transition);
 }
 .action-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
-.action-btn.delete:hover { color: #f87171; }
+.action-btn.delete:hover { color: var(--danger); }
 .action-btn.use {
   background: var(--accent-gradient);
   color: white;

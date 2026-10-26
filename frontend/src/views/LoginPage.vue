@@ -325,13 +325,13 @@ onMounted(loadCaptcha)
 
 .error-msg {
   font-size: 13px;
-  color: #ef4444;
+  color: var(--danger);
   text-align: center;
 }
 
 .success-msg {
   font-size: 13px;
-  color: #22c55e;
+  color: var(--success);
   text-align: center;
 }
 
@@ -360,7 +360,7 @@ onMounted(loadCaptcha)
   transition: var(--transition);
 }
 .toggle-btn:hover {
-  color: var(--accent-purple);
+  color: var(--accent-secondary);
 }
 
 /* 分割线 */

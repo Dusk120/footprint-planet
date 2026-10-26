@@ -269,7 +269,7 @@ onUnmounted(() => {
 
 /* ===== 入场动画（顺序：地球→品牌名→标语→按钮） ===== */
 .en-title {
-  font-family: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+  font-family: 'IBM Plex Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   font-size: 28px;
   font-weight: 400;
   letter-spacing: 8px;

@@ -370,7 +370,7 @@ onMounted(() => {
   border-radius: 50%;
   border: 2px solid transparent;
   border-top-color: var(--accent-blue);
-  border-right-color: var(--accent-purple);
+  border-right-color: var(--accent-secondary);
   animation: spin 6s linear infinite;
 }
 
@@ -519,7 +519,7 @@ onMounted(() => {
    SVG 的 fill 属性不认 var()，只能这样用 CSS 规则设 */
 .note-card-likes .stat-icon,
 .note-card-comments .stat-icon { fill: var(--text-muted); }
-.note-card-likes.liked .stat-icon { fill: #f87171; }
+.note-card-likes.liked .stat-icon { fill: var(--danger); }
 
 .empty-notes {
   padding: 40px;

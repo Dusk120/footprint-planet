@@ -66,6 +66,14 @@ async function request(path, { method = 'GET', body, params } = {}) {
       // 后端统一返回 HTTP 200 + 业务 code，所以 err.status 恒为 200，拿不到真实语义；
       // 这里把业务码也带上，调用方才能区分「接口不存在(404 资源不存在)」这类情况
       err.code = data.code
+      // 业务码 401（未登录 / 登录过期 / 账号被禁用）同样要清 token 并触发全局登出，
+      // 否则 token 失效后停留在当前页操作只会弹错误提示，不会自动跳回登录页
+      if (data.code === 401) {
+        setToken(null)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('unauthorized'))
+        }
+      }
       throw err
     }
     return data.data

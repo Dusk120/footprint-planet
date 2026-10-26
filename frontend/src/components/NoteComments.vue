@@ -321,7 +321,7 @@ onBeforeUnmount(teardownObserver)
                   @click="toggleLike(comment)"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24"
-                       :fill="comment.liked ? '#f87171' : 'none'" stroke="currentColor" stroke-width="2">
+                       :style="{ fill: comment.liked ? 'var(--danger)' : 'none' }" stroke="currentColor" stroke-width="2">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                   </svg>
                   {{ comment.likes || 0 }}
@@ -354,7 +354,7 @@ onBeforeUnmount(teardownObserver)
                     @click="toggleLike(reply)"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24"
-                         :fill="reply.liked ? '#f87171' : 'none'" stroke="currentColor" stroke-width="2">
+                         :style="{ fill: reply.liked ? 'var(--danger)' : 'none' }" stroke="currentColor" stroke-width="2">
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                     </svg>
                     {{ reply.likes || 0 }}
@@ -560,9 +560,9 @@ onBeforeUnmount(teardownObserver)
   padding: 0;
 }
 .comment-action:hover { color: var(--accent-blue); }
-.comment-action.like.on { color: #f87171; }
-.comment-action.like:hover { color: #f87171; }
-.comment-action.delete:hover { color: #f87171; }
+.comment-action.like.on { color: var(--danger); }
+.comment-action.like:hover { color: var(--danger); }
+.comment-action.delete:hover { color: var(--danger); }
 .comment-action:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* 回复列表：缩进显示在父评论下方 */

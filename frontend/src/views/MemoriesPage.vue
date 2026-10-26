@@ -762,7 +762,7 @@ function nextPhoto() {
 .auto-toggle.active {
   background: rgba(52, 211, 153, 0.16);
   border-color: rgba(52, 211, 153, 0.55);
-  color: #34d399;
+  color: var(--success);
 }
 
 .zoom-reset {
@@ -1023,7 +1023,7 @@ function nextPhoto() {
 .hud-progress {
   font-size: 12px;
   font-weight: 600;
-  color: #34d399;
+  color: var(--success);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1283,7 +1283,7 @@ function nextPhoto() {
   border-radius: var(--radius-pill);
   background: rgba(248, 113, 113, 0.1);
   border: 1px solid rgba(248, 113, 113, 0.25);
-  color: #f87171;
+  color: var(--danger);
   font-size: 13px;
   font-weight: 600;
   transition: var(--transition);

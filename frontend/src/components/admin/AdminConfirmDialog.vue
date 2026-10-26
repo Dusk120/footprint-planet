@@ -50,7 +50,7 @@ const emit = defineEmits(['cancel', 'confirm'])
 }
 
 .btn-confirm.danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, var(--danger), var(--danger-deep));
   box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
 }
 </style>

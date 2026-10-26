@@ -189,7 +189,7 @@ async function handleConfirm() {
   border-radius: var(--radius-xs);
   background: rgba(248, 113, 113, 0.12);
   border: 1px solid rgba(248, 113, 113, 0.3);
-  color: #f87171;
+  color: var(--danger);
   font-size: 13px;
 }
 </style>

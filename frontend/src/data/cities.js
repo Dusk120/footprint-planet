@@ -14,11 +14,11 @@ export const MUNI_POINTS = [
 
 let cache = null
 
-// \u52A0\u8F7D GeoJSON \u6570\u636E\uFF1A\u7ED3\u679C\u6302\u5230 window \u4E0A\u4E0E EChartsChinaMap.vue \u5171\u7528\uFF0C\u907F\u514D\u91CD\u590D\u8BF7\u6C42
+// 加载 GeoJSON 数据：结果挂到 window 上与 EChartsChinaMap.vue 共用，避免重复请求
 async function loadGeoJson(path, cacheKey) {
   if (cacheKey && window[cacheKey]) return window[cacheKey]
   const res = await fetch(path)
-  if (!res.ok) throw new Error(`\u52A0\u8F7D ${path} \u5931\u8D25\uFF08HTTP ${res.status}\uFF09`)
+  if (!res.ok) throw new Error(`加载 ${path} 失败（HTTP ${res.status}）`)
   const json = await res.json()
   if (cacheKey) window[cacheKey] = json
   return json
