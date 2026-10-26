@@ -405,7 +405,7 @@ async function confirmRemove() {
   padding: 8px 16px;
   border-radius: var(--radius-pill);
   background: rgba(var(--overlay-rgb), 0.06);
-  border: 1px solid rgba(125, 211, 252, 0.28);
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
@@ -413,7 +413,7 @@ async function confirmRemove() {
 }
 .all-btn:hover {
   background: rgba(var(--overlay-rgb), 0.12);
-  border-color: rgba(125, 211, 252, 0.55);
+  border-color: rgba(var(--accent-rgb), 0.55);
 }
 
 .timeline-list {
@@ -437,11 +437,11 @@ async function confirmRemove() {
   font-size: 13px;
   font-weight: 600;
   transition: var(--transition);
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.35);
 }
 .light-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(56, 189, 248, 0.5);
+  box-shadow: 0 6px 24px rgba(var(--accent-rgb), 0.5);
 }
 
 .timeline-item {
@@ -483,7 +483,7 @@ async function confirmRemove() {
 .all-cities-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 30, 0.6);
+  background: rgba(18, 10, 26, 0.6);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;

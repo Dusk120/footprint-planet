@@ -204,7 +204,7 @@ onMounted(loadCaptcha)
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(56, 189, 248, 0.08), rgba(14, 165, 233, 0.04), transparent 70%);
+  background: radial-gradient(circle at 30% 30%, rgba(var(--accent-rgb), 0.08), rgba(14, 165, 233, 0.04), transparent 70%);
   z-index: 0;
   pointer-events: none;
 }
@@ -274,8 +274,8 @@ onMounted(loadCaptcha)
 
 .form-input:focus {
   outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 .form-input::placeholder {
@@ -305,7 +305,7 @@ onMounted(loadCaptcha)
 }
 
 .captcha-img:hover {
-  border-color: var(--accent-blue);
+  border-color: var(--accent-primary);
 }
 
 .captcha-refresh {
@@ -317,7 +317,7 @@ onMounted(loadCaptcha)
   border-radius: var(--radius-sm);
   background: rgba(var(--overlay-rgb), 0.04);
   border: 1px solid rgba(var(--overlay-rgb), 0.1);
-  color: var(--accent-blue);
+  color: var(--accent-primary);
   font-size: 13px;
   cursor: pointer;
   flex-shrink: 0;
@@ -354,7 +354,7 @@ onMounted(loadCaptcha)
 
 .toggle-btn {
   background: none;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
   font-size: 13px;
   font-weight: 600;
   transition: var(--transition);

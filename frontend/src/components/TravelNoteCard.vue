@@ -137,9 +137,9 @@ const emit = defineEmits(['like', 'click'])
 .note-location {
   display: inline-block;
   font-size: 12px;
-  color: #a5b4fc;
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: var(--accent-soft);
+  background: rgba(var(--accent-rgb), 0.15);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   padding: 2px 10px;
   border-radius: var(--radius-pill);
   margin-bottom: 8px;

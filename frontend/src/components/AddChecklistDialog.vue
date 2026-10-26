@@ -209,7 +209,7 @@ function handleConfirm() {
   justify-content: space-between;
 }
 
-.day-title { font-size: 14px; font-weight: 700; color: var(--accent-blue); }
+.day-title { font-size: 14px; font-weight: 700; color: var(--accent-primary); }
 
 .day-remove {
   font-size: 12px;
@@ -253,7 +253,7 @@ function handleConfirm() {
 .add-item-btn {
   align-self: flex-start;
   font-size: 13px;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
   background: none;
   padding: 4px 0;
   transition: var(--transition);
@@ -264,14 +264,14 @@ function handleConfirm() {
   align-self: flex-start;
   padding: 8px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px dashed rgba(56, 189, 248, 0.4);
-  color: var(--accent-blue);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px dashed rgba(var(--accent-rgb), 0.4);
+  color: var(--accent-primary);
   font-size: 13px;
   font-weight: 600;
   transition: var(--transition);
 }
-.add-day-btn:hover { background: rgba(56, 189, 248, 0.2); }
+.add-day-btn:hover { background: rgba(var(--accent-rgb), 0.2); }
 
 .waypoint-tag {
   display: flex;
@@ -279,11 +279,11 @@ function handleConfirm() {
   gap: 8px;
   padding: 8px 12px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
   font-size: 13px;
 }
-.wp-name { font-weight: 600; color: var(--accent-blue); }
+.wp-name { font-weight: 600; color: var(--accent-primary); }
 .wp-note { color: var(--text-muted); font-size: 12px; }
 .wp-remove {
   margin-left: auto;

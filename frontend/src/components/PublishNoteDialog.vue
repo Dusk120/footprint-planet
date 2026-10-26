@@ -162,13 +162,13 @@ function handlePublish() {
   gap: 10px;
   padding: 10px 14px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.18);
-  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: rgba(var(--accent-rgb), 0.18);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
   font-size: 14px;
   font-weight: 500;
 }
 .loc-name {
-  color: #a5b4fc;
+  color: var(--accent-soft);
 }
 .loc-prov {
   font-size: 12px;
@@ -194,15 +194,15 @@ function handlePublish() {
   align-self: flex-start;
   padding: 9px 18px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px dashed rgba(56, 189, 248, 0.45);
-  color: #a5b4fc;
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px dashed rgba(var(--accent-rgb), 0.45);
+  color: var(--accent-soft);
   font-size: 14px;
   font-weight: 600;
   transition: var(--transition);
 }
 .loc-pick:hover {
-  background: rgba(56, 189, 248, 0.24);
+  background: rgba(var(--accent-rgb), 0.24);
 }
 
 .loc-search {
@@ -252,7 +252,7 @@ function handlePublish() {
   transition: var(--transition);
 }
 .loc-option:hover {
-  background: rgba(56, 189, 248, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
 }
 
 .loc-opt-prov {

@@ -164,8 +164,8 @@ function formatDate(d) {
 .meta-tag {
   padding: 5px 12px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.1);
-  color: var(--accent-blue);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent-primary);
   font-size: 13px;
   font-weight: 500;
 }
@@ -261,7 +261,7 @@ function formatDate(d) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--accent-blue);
+  background: var(--accent-primary);
   margin-top: 6px;
   flex-shrink: 0;
 }

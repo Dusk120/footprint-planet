@@ -445,8 +445,8 @@ onBeforeUnmount(teardownObserver)
   outline: none;
 }
 .comment-input:focus {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 .comment-input::placeholder { color: var(--text-muted); }
 
@@ -463,7 +463,7 @@ onBeforeUnmount(teardownObserver)
 }
 .comment-send-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.4);
 }
 .comment-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .comment-send-btn.small { width: auto; margin-top: 0; padding: 5px 14px; }
@@ -524,7 +524,7 @@ onBeforeUnmount(teardownObserver)
 .comment-item-name {
   font-size: 12px;
   font-weight: 600;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
 }
 
 .comment-item-time {
@@ -559,7 +559,7 @@ onBeforeUnmount(teardownObserver)
   transition: var(--transition);
   padding: 0;
 }
-.comment-action:hover { color: var(--accent-blue); }
+.comment-action:hover { color: var(--accent-primary); }
 .comment-action.like.on { color: var(--danger); }
 .comment-action.like:hover { color: var(--danger); }
 .comment-action.delete:hover { color: var(--danger); }
@@ -572,7 +572,7 @@ onBeforeUnmount(teardownObserver)
   gap: 6px;
   margin-left: 16px;
   padding-left: 8px;
-  border-left: 2px solid rgba(56, 189, 248, 0.2);
+  border-left: 2px solid rgba(var(--accent-rgb), 0.2);
 }
 
 .reply-item { background: rgba(var(--overlay-rgb), 0.02); }
@@ -580,7 +580,7 @@ onBeforeUnmount(teardownObserver)
 .reply-input-section {
   margin-left: 16px;
   padding-left: 8px;
-  border-left: 2px solid rgba(56, 189, 248, 0.35);
+  border-left: 2px solid rgba(var(--accent-rgb), 0.35);
 }
 
 .reply-input-actions {

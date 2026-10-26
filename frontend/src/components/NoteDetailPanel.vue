@@ -303,7 +303,7 @@ function handleLike() {
   opacity: 0.8;
 }
 .detail-thumb.active {
-  border-color: var(--accent-blue);
+  border-color: var(--accent-primary);
   opacity: 1;
 }
 
@@ -328,9 +328,9 @@ function handleLike() {
 .tag-location {
   padding: 4px 14px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  color: var(--accent-blue);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  color: var(--accent-primary);
   font-size: 13px;
   font-weight: 500;
 }

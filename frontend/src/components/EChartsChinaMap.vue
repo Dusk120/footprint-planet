@@ -82,36 +82,36 @@ function getThemeColors() {
   const isDark = store.theme === 'dark'
   return isDark
     ? {
-        area: '#141d3a', border: 'rgba(255,255,255,0.18)',
-        emArea: '#182048', emBorder: '#64748b',
+        area: '#221a33', border: 'rgba(255,255,255,0.18)',
+        emArea: '#2c2242', emBorder: '#8b7a9e',
         label: 'rgba(255,255,255,0.45)',
         labelShadow: 'rgba(0,0,0,0.8)',
         cityLabel: 'rgba(255,255,255,0.8)',
         markerBorder: 'rgba(0,0,0,0.4)',
         markerNormal: 'rgba(255,255,255,0.85)',
-        visitedShadow: 'rgba(56,189,248,0.6)',
-        tooltipBg: 'rgba(8,8,8,.97)',
-        tooltipBorder: 'rgba(71,85,105,.5)',
-        tooltipText: '#f8fafc',
+        visitedShadow: 'rgba(56,189,248,0.55)',
+        tooltipBg: 'rgba(22,14,28,.97)',
+        tooltipBorder: 'rgba(146,110,84,.5)',
+        tooltipText: '#f8f2ea',
         scatterNormal: 'rgba(255,255,255,0.85)',
         scatterOther: 'rgba(255,255,255,0.55)',
-        boundaryStroke: 'rgba(56,189,248,0.38)'
+        boundaryStroke: 'rgba(56,189,248,0.42)'
       }
     : {
-        area: '#e2e8f0', border: 'rgba(0,0,0,0.12)',
-        emArea: '#cbd5e1', emBorder: '#94a3b8',
-        label: 'rgba(30,41,59,0.55)',
+        area: '#ece3d6', border: 'rgba(0,0,0,0.12)',
+        emArea: '#dccfc0', emBorder: '#a89684',
+        label: 'rgba(51,40,31,0.55)',
         labelShadow: 'rgba(255,255,255,0.6)',
-        cityLabel: 'rgba(30,41,59,0.8)',
+        cityLabel: 'rgba(51,40,31,0.8)',
         markerBorder: 'rgba(255,255,255,0.6)',
-        markerNormal: 'rgba(30,41,59,0.85)',
-        visitedShadow: 'rgba(56,189,248,0.5)',
-        tooltipBg: 'rgba(255,255,255,.97)',
-        tooltipBorder: 'rgba(0,0,0,.12)',
-        tooltipText: '#1e293b',
-        scatterNormal: 'rgba(30,41,59,0.85)',
-        scatterOther: 'rgba(30,41,59,0.5)',
-        boundaryStroke: 'rgba(56,189,248,0.45)'
+        markerNormal: 'rgba(51,40,31,0.85)',
+        visitedShadow: 'rgba(251,146,60,0.5)',
+        tooltipBg: 'rgba(255,253,250,.97)',
+        tooltipBorder: 'rgba(112,74,44,.18)',
+        tooltipText: '#33281f',
+        scatterNormal: 'rgba(51,40,31,0.85)',
+        scatterOther: 'rgba(51,40,31,0.5)',
+        boundaryStroke: 'rgba(251,146,60,0.5)'
       }
 }
 
@@ -375,6 +375,10 @@ function makeScatterSeries() {
 
 // ---------- 已点亮城市标记（涟漪，始终显示） ----------
 function makeVisitedMarkerSeries() {
+  // ECharts option 是 canvas 配置，不能用 CSS 变量，这里按主题取真实色值
+  const isDark = store.theme === 'dark'
+  const fallback = isDark ? '#38bdf8' : '#fb923c'
+  const labelColor = isDark ? '#7dd3fc' : '#9a3412'
   return {
     name: '已点亮城市',
     type: 'effectScatter',
@@ -386,9 +390,9 @@ function makeVisitedMarkerSeries() {
     symbolSize: 8,
     rippleEffect: { brushType: 'stroke', scale: 2.0, period: 3.5 },
     itemStyle: {
-      color: (p) => p.data.color || '#38bdf8',
+      color: (p) => p.data.color || fallback,
       shadowBlur: 5,
-      shadowColor: (p) => withAlpha(p.data.color || '#38bdf8', 0.55)
+      shadowColor: (p) => withAlpha(p.data.color || fallback, 0.55)
     },
     label: {
       show: false,
@@ -396,7 +400,7 @@ function makeVisitedMarkerSeries() {
       distance: 4,
       formatter: '{b}',
       fontWeight: 'bold',
-      color: '#a5b4fc',
+      color: labelColor,
       fontSize: 12,
       textShadowColor: 'rgba(0,0,0,0.8)',
       textShadowBlur: 6

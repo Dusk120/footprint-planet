@@ -471,7 +471,7 @@ async function handlePlanDialogConfirm(data) {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(14, 165, 233, 0.3));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.3), rgba(14, 165, 233, 0.3));
   overflow: hidden;
   border: 2px solid rgba(var(--overlay-rgb), 0.15);
 }
@@ -488,7 +488,7 @@ async function handlePlanDialogConfirm(data) {
   inset: -4px;
   border-radius: 50%;
   border: 2px solid transparent;
-  border-top-color: var(--accent-blue);
+  border-top-color: var(--accent-primary);
   border-right-color: var(--accent-secondary);
   animation: spin 6s linear infinite;
 }
@@ -535,7 +535,7 @@ async function handlePlanDialogConfirm(data) {
 .edit-btn:hover {
   background: var(--bg-card-hover);
   color: var(--text-primary);
-  border-color: var(--accent-blue);
+  border-color: var(--accent-primary);
 }
 
 /* Sections */
@@ -558,7 +558,7 @@ async function handlePlanDialogConfirm(data) {
 
 .view-all-btn {
   background: none;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
   font-size: 13px;
   font-weight: 600;
   transition: var(--transition);
@@ -617,7 +617,7 @@ async function handlePlanDialogConfirm(data) {
 .note-card-placeholder {
   width: 120px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(14, 165, 233, 0.12));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.12), rgba(14, 165, 233, 0.12));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -662,7 +662,7 @@ async function handlePlanDialogConfirm(data) {
 
 .note-card-location {
   font-size: 12px;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
 }
 
 /* 点赞 + 评论并排，跟社区卡片的 .note-stats 一个样式 */
@@ -707,7 +707,7 @@ async function handlePlanDialogConfirm(data) {
 }
 .empty-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.4);
 }
 
 /* Plan Cards */
@@ -751,7 +751,7 @@ async function handlePlanDialogConfirm(data) {
   width: 44px;
   height: 44px;
   border-radius: var(--radius-xs);
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(14, 165, 233, 0.15));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15), rgba(14, 165, 233, 0.15));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -775,7 +775,7 @@ async function handlePlanDialogConfirm(data) {
 
 .plan-dest {
   font-size: 12px;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
 }
 
 .plan-meta {
@@ -799,9 +799,9 @@ async function handlePlanDialogConfirm(data) {
   font-size: 11px;
   padding: 2px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  color: #a5b4fc;
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  color: var(--accent-soft);
 }
 
 /* Pagination */

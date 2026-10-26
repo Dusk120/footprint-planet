@@ -262,7 +262,7 @@ function handleConfirm() {
 }
 .color-swatch.on {
   border-color: #fff;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.6);
 }
 
 .record-card {
@@ -333,9 +333,9 @@ function handleConfirm() {
 
 .add-more {
   align-self: center;
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  color: #a5b4fc;
+  background: rgba(var(--accent-rgb), 0.15);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  color: var(--accent-soft);
   font-size: 14px;
   font-weight: 600;
   padding: 10px 26px;
@@ -343,7 +343,7 @@ function handleConfirm() {
   transition: var(--transition);
 }
 .add-more:hover {
-  background: rgba(56, 189, 248, 0.28);
+  background: rgba(var(--accent-rgb), 0.28);
 }
 
 /* 选择城市模式 */
@@ -389,8 +389,8 @@ function handleConfirm() {
   transition: var(--transition);
 }
 .city-option:hover {
-  background: rgba(56, 189, 248, 0.18);
-  border-color: rgba(56, 189, 248, 0.5);
+  background: rgba(var(--accent-rgb), 0.18);
+  border-color: rgba(var(--accent-rgb), 0.5);
 }
 
 .city-prov {

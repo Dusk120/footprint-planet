@@ -222,7 +222,7 @@ onMounted(load)
   transition: var(--transition);
 }
 .shot-thumb:hover {
-  border-color: var(--accent-blue);
+  border-color: var(--accent-primary);
 }
 .shot-thumb img {
   width: 100%;

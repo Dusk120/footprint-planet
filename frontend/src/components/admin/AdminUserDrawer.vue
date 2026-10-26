@@ -113,7 +113,7 @@ function formatKm(n) {
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 30, 0.72);
+  background: rgba(18, 10, 26, 0.72);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;

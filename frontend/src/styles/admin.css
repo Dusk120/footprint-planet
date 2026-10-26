@@ -319,7 +319,7 @@
   min-height: 4px;
   border-radius: 8px 8px 3px 3px;
   background: var(--accent-gradient);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.35);
   transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .trend-label { font-size: 11px; color: var(--text-muted); }

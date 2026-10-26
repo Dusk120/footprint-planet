@@ -294,8 +294,8 @@ function goToPage(p) {
   transform: translateY(-1px);
 }
 .list-card.active {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.2);
 }
 
 .card-top {
@@ -309,7 +309,7 @@ function goToPage(p) {
   width: 44px;
   height: 44px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.2));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.2), rgba(14, 165, 233, 0.2));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -337,9 +337,9 @@ function goToPage(p) {
 .waypoint-pill {
   padding: 3px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.08);
+  background: rgba(var(--accent-rgb), 0.08);
   font-size: 11px;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
 }
 .waypoint-pill.more {
   background: rgba(var(--overlay-rgb), 0.06);

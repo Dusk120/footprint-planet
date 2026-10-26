@@ -3,6 +3,7 @@ import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useAppStore } from '../stores/app'
 import AdminConfirmDialog from '../components/admin/AdminConfirmDialog.vue'
 import { useToast } from '../composables/useToast'
+import { cityColorOf, withAlpha } from '../utils/cityColor'
 
 const store = useAppStore()
 const { show: toast } = useToast()
@@ -105,6 +106,12 @@ const removeIsLast = computed(() => {
 // 卡片沿时间正序（最早在前）排成一条螺旋隧道，相机沿 Z 轴前进。
 // 滚轮驱动 camZ：卡片由远（小、透明）→ 近（大、清晰）→ 擦身而过（淡出消失），
 // 往回滚即可重现——模拟「从第一个足迹走到最后一个足迹」的时间流逝。
+
+// 无照片封面的兜底：城市主题色渐变，与足迹地图的整市涂色同源（颜色即城市身份）
+function fallbackCover(m) {
+  const c = cityColorOf(m)
+  return `linear-gradient(165deg, ${withAlpha(c, 0.72)}, ${c} 55%)`
+}
 
 // 时间正序的卡片（后端按游玩时间倒序返回，这里反过来让最早的在最前）
 const tunnelItems = computed(() => visibleMemories.value.slice().reverse())
@@ -472,7 +479,11 @@ function nextPhoto() {
           @click="openDetail(nd.m)"
         >
           <img v-if="nd.m.cover" class="card-img" :src="nd.m.cover" alt="" />
-          <div v-else class="card-img card-img-fallback">
+          <div
+            v-else
+            class="card-img card-img-fallback"
+            :style="{ background: fallbackCover(nd.m) }"
+          >
             <span>{{ nd.m.cityName.charAt(0) }}</span>
           </div>
 
@@ -675,16 +686,16 @@ function nextPhoto() {
 .mem-search-btn {
   padding: 7px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(125, 211, 252, 0.28);
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
   transition: var(--transition);
 }
 .mem-search-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(125, 211, 252, 0.55);
+  background: var(--bg-card-hover);
+  border-color: rgba(var(--accent-rgb), 0.55);
 }
 
 .mem-search-icon {
@@ -698,8 +709,8 @@ function nextPhoto() {
   width: 190px;
   padding: 7px 30px 7px 34px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(125, 211, 252, 0.28);
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
   color: var(--text-primary);
   font-size: 13px;
   transition: var(--transition);
@@ -708,13 +719,13 @@ function nextPhoto() {
   color: var(--text-muted);
 }
 .mem-search-input:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(125, 211, 252, 0.55);
+  background: var(--bg-card-hover);
+  border-color: rgba(var(--accent-rgb), 0.55);
 }
 .mem-search-input:focus {
   outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
 }
 
 .mem-search-clear {
@@ -748,16 +759,16 @@ function nextPhoto() {
 .auto-toggle {
   padding: 7px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(125, 211, 252, 0.28);
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
   transition: var(--transition);
 }
 .auto-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(125, 211, 252, 0.55);
+  background: var(--bg-card-hover);
+  border-color: rgba(var(--accent-rgb), 0.55);
 }
 .auto-toggle.active {
   background: rgba(52, 211, 153, 0.16);
@@ -774,7 +785,7 @@ function nextPhoto() {
   transition: var(--transition);
 }
 .zoom-reset:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-card-hover);
   color: var(--text-primary);
 }
 
@@ -791,8 +802,8 @@ function nextPhoto() {
   -webkit-appearance: none;
   padding: 7px 34px 7px 14px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(125, 211, 252, 0.28);
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
@@ -800,16 +811,16 @@ function nextPhoto() {
   transition: var(--transition);
 }
 .year-select:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(125, 211, 252, 0.55);
+  background: var(--bg-card-hover);
+  border-color: rgba(var(--accent-rgb), 0.55);
 }
 .year-select:focus {
   outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
 }
 .year-select option {
-  background: #0b1220;
+  background: var(--dialog-bg);
   color: var(--text-primary);
 }
 
@@ -818,7 +829,7 @@ function nextPhoto() {
   right: 12px;
   display: flex;
   align-items: center;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
   pointer-events: none;
 }
 
@@ -832,9 +843,9 @@ function nextPhoto() {
   cursor: default;
   user-select: none;
   background:
-    radial-gradient(ellipse 62% 72% at 46% 44%, rgba(56, 189, 248, 0.10), transparent 70%),
+    radial-gradient(ellipse 62% 72% at 46% 44%, rgba(var(--accent-rgb), 0.10), transparent 70%),
     radial-gradient(ellipse 40% 50% at 88% 66%, rgba(167, 139, 250, 0.10), transparent 70%),
-    radial-gradient(ellipse 34% 44% at 10% 26%, rgba(56, 189, 248, 0.08), transparent 70%),
+    radial-gradient(ellipse 34% 44% at 10% 26%, rgba(var(--accent-rgb), 0.08), transparent 70%),
     radial-gradient(ellipse 90% 90% at 50% 50%, #0a1020 30%, #060a14 100%);
 }
 
@@ -856,13 +867,13 @@ function nextPhoto() {
 }
 
 .web-line {
-  stroke: #7dd3fc;
+  stroke: var(--accent-soft);
   stroke-width: 0.7;
 }
 
 .web-node {
-  fill: #bae6fd;
-  filter: drop-shadow(0 0 3px rgba(125, 211, 252, 0.9));
+  fill: var(--accent-soft);
+  filter: drop-shadow(0 0 3px rgba(var(--accent-rgb), 0.7));
 }
 
 /* 卡片绝对定位到画布中心，位置/尺寸/透明度/层级全部由 inline style（投影）驱动 */
@@ -873,16 +884,16 @@ function nextPhoto() {
   overflow: hidden;
   cursor: pointer;
   background: #0b1220;
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   border-radius: 14px;
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.16), 0 8px 20px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.16), 0 8px 20px rgba(0, 0, 0, 0.45);
   font-size: 15px;
   transition: box-shadow 0.22s ease, border-color 0.22s ease;
 }
 .memory-card:hover {
   translate: 0 -4px;
-  border-color: rgba(125, 211, 252, 0.75);
-  box-shadow: 0 0 26px rgba(56, 189, 248, 0.38), 0 12px 26px rgba(0, 0, 0, 0.5);
+  border-color: rgba(var(--accent-rgb), 0.7);
+  box-shadow: 0 0 26px rgba(var(--accent-rgb), 0.38), 0 12px 26px rgba(0, 0, 0, 0.5);
 }
 
 .card-img {
@@ -895,7 +906,7 @@ function nextPhoto() {
 }
 
 .card-img-fallback {
-  background: linear-gradient(135deg, #10b981, #14b8a6);
+  /* 背景色由内联 style 提供：城市主题色渐变（fallbackCover），颜色即城市身份 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -935,6 +946,7 @@ function nextPhoto() {
 
 .card-date {
   font-size: 0.7em;
+  /* 始终落在照片的深色 overlay 上，固定浅蓝保证两种主题下都可读 */
   color: #7dd3fc;
   font-variant-numeric: tabular-nums;
 }
@@ -1001,14 +1013,14 @@ function nextPhoto() {
   padding: 10px 18px;
   border-radius: var(--radius-pill);
   background: rgba(6, 10, 20, 0.72);
-  border: 1px solid rgba(125, 211, 252, 0.28);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   backdrop-filter: blur(10px);
   pointer-events: none;
 }
 .hud-year {
   font-size: 13px;
   font-weight: 700;
-  color: #7dd3fc;
+  color: var(--accent-soft);
 }
 .hud-city {
   font-size: 15px;
@@ -1026,6 +1038,35 @@ function nextPhoto() {
   color: var(--success);
   font-variant-numeric: tabular-nums;
 }
+
+/* 亮色主题：回忆轨道从深夜星空切换为晨光天空 */
+[data-theme="light"] .memories-canvas {
+  background:
+    radial-gradient(ellipse 62% 72% at 46% 44%, rgba(249, 115, 22, 0.12), transparent 70%),
+    radial-gradient(ellipse 40% 50% at 88% 66%, rgba(236, 72, 153, 0.05), transparent 70%),
+    radial-gradient(ellipse 34% 44% at 10% 26%, rgba(249, 115, 22, 0.09), transparent 70%),
+    radial-gradient(ellipse 90% 90% at 50% 50%, #fdf8f1 30%, #f1e5d4 100%);
+}
+[data-theme="light"] .star-dot { fill: #c9a17a; }
+[data-theme="light"] .star-bright {
+  fill: #a8763e;
+  filter: drop-shadow(0 0 3px rgba(var(--accent-rgb), 0.55));
+}
+[data-theme="light"] .memory-card {
+  background: #fffdfa;
+  border-color: rgba(194, 65, 12, 0.35);
+  box-shadow: 0 0 18px rgba(249, 115, 22, 0.16), 0 8px 20px rgba(112, 74, 44, 0.18);
+}
+[data-theme="light"] .memory-card:hover {
+  border-color: rgba(219, 39, 119, 0.55);
+  box-shadow: 0 0 26px rgba(249, 115, 22, 0.3), 0 12px 26px rgba(112, 74, 44, 0.22);
+}
+[data-theme="light"] .tunnel-hud {
+  background: rgba(255, 251, 245, 0.78);
+  border-color: rgba(194, 65, 12, 0.28);
+}
+[data-theme="light"] .hud-city { color: #33281f; }
+[data-theme="light"] .hud-date { color: rgba(51, 40, 31, 0.72); }
 
 /* Empty */
 .empty-state {
@@ -1050,7 +1091,7 @@ function nextPhoto() {
 
 .link-btn {
   background: none;
-  color: var(--accent-blue);
+  color: var(--accent-primary);
   font-size: 13px;
   text-decoration: underline;
 }
@@ -1173,7 +1214,7 @@ function nextPhoto() {
   display: block;
 }
 .detail-thumb.active {
-  border-color: var(--accent-blue);
+  border-color: var(--accent-primary);
   opacity: 1;
 }
 

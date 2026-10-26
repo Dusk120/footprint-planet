@@ -19,7 +19,7 @@ export function cityColorOf(city) {
   return city?.color || pickCityColor(city?.name)
 }
 
-// '#38bdf8' + 0.6 → 'rgba(56,189,248,0.6)'，给 ECharts shadowColor 用
+// 主色 '#38bdf8' + 0.6 → 'rgba(56,189,248,0.6)'，给 ECharts shadowColor 兜底用
 export function withAlpha(hex, a) {
   const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
   if (!m) return `rgba(56,189,248,${a})`

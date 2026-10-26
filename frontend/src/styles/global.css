@@ -1,32 +1,38 @@
 :root {
-  --bg-deep: #0a0e27;
+  /* 方案 B · 暮色旅途（深色）：偏紫深夜底 + 落日橙→晚霞粉主渐变 */
+  --bg-deep: #131020;
   --bg-card: rgba(255, 255, 255, 0.06);
   --bg-card-hover: rgba(255, 255, 255, 0.10);
-  --bg-glass: rgba(255, 255, 255, 0.08);
-  --bg-glass-border: rgba(255, 255, 255, 0.12);
+  --bg-glass: rgba(255, 255, 255, 0.07);
+  --bg-glass-border: rgba(255, 205, 170, 0.13);
   /* 需要真正看得见的边框（虚线上传框之类）。比 --bg-glass-border 明显一档，
      浅色主题下必须翻成深色，否则白框画在白底上等于没有 */
-  --border-strong: rgba(255, 255, 255, 0.22);
+  --border-strong: rgba(255, 205, 170, 0.26);
   /* 「往底色上叠一层」的叠加色分量。
      全站原来散着 50 多处写死的 rgba(255,255,255,x) 当边框和底色用 ——
-     深色主题下是"叠白"，浅色主题下必须变成"叠黑"，否则全都是白框白底。
+     深色主题下是"叠白"，浅色主题下必须变成"叠暖棕"，否则全都是白框白底。
      写成 rgba(var(--overlay-rgb), x) 就能保留各自原有的透明度，只翻转色相 */
   --overlay-rgb: 255, 255, 255;
 
-  --accent-blue: #38bdf8;
+  --accent-primary: #38bdf8;
   --accent-secondary: #6366f1;
+  /* 主强调的柔和变体：深底上的次要强调文字 / 线条 */
+  --accent-soft: #7dd3fc;
+  /* 主强调的 RGB 分量：给按钮发光 / 聚焦光圈用 rgba(var(--accent-rgb), x)，
+     让阴影颜色随主题自动切换（深=蓝、浅=橙） */
+  --accent-rgb: 56, 189, 248;
   --accent-gradient: linear-gradient(135deg, #38bdf8, #6366f1);
   --accent-gradient-h: linear-gradient(90deg, #38bdf8, #6366f1);
 
   /* 功能语义色：统一全站散落的成功 / 警告 / 危险硬编码 */
-  --success: var(--success);
+  --success: #22c55e;
   --warning: #f59e0b;
-  --danger: var(--danger);
-  --danger-deep: var(--danger-deep);
+  --danger: #ef4444;
+  --danger-deep: #dc2626;
 
-  --text-primary: #f1f5f9;
-  --text-secondary: rgba(241, 245, 249, 0.7);
-  --text-muted: rgba(241, 245, 249, 0.45);
+  --text-primary: #f5efe6;
+  --text-secondary: rgba(245, 239, 230, 0.72);
+  --text-muted: rgba(245, 239, 230, 0.48);
 
   --sidebar-width: 240px;
   --radius: 16px;
@@ -34,53 +40,68 @@
   --radius-xs: 8px;
   --radius-pill: 999px;
 
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
-  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.3);
+  --shadow-card: 0 8px 32px rgba(8, 4, 18, 0.42);
+  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.28);
 
   /* 对话框主题色 */
-  --dialog-bg: #141a3d;
-  --dialog-border: rgba(255, 255, 255, 0.14);
-  --dialog-divider: rgba(255, 255, 255, 0.08);
+  --dialog-bg: #1c1630;
+  --dialog-border: rgba(255, 205, 170, 0.14);
+  --dialog-divider: rgba(255, 205, 170, 0.09);
   --dialog-input-bg: rgba(255, 255, 255, 0.06);
-  --dialog-input-border: rgba(255, 255, 255, 0.12);
+  --dialog-input-border: rgba(255, 205, 170, 0.13);
   --dialog-cancel-bg: rgba(255, 255, 255, 0.08);
   --dialog-cancel-hover: rgba(255, 255, 255, 0.14);
   --dialog-day-bg: rgba(255, 255, 255, 0.03);
   --dialog-day-border: rgba(255, 255, 255, 0.06);
   --dialog-item-bg: rgba(255, 255, 255, 0.04);
-  --dialog-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  --dialog-shadow: 0 24px 80px rgba(8, 4, 16, 0.65);
 
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* 暖日间主题：晨光纸白，与深色的暮色气质同一世界观 */
 [data-theme="light"] {
-  --bg-deep: #f0f2f5;
-  --bg-card: rgba(0, 0, 0, 0.04);
-  --bg-card-hover: rgba(0, 0, 0, 0.07);
-  --bg-glass: rgba(255, 255, 255, 0.7);
-  --bg-glass-border: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.18);
-  --overlay-rgb: 0, 0, 0;
+  --bg-deep: #f7f2ec;
+  --bg-card: rgba(255, 255, 255, 0.72);
+  --bg-card-hover: rgba(255, 255, 255, 0.92);
+  --bg-glass: rgba(255, 255, 255, 0.72);
+  --bg-glass-border: rgba(112, 74, 44, 0.12);
+  --border-strong: rgba(112, 74, 44, 0.26);
+  --overlay-rgb: 112, 74, 44;
 
-  --text-primary: #1e293b;
-  --text-secondary: rgba(30, 41, 59, 0.7);
-  --text-muted: rgba(30, 41, 59, 0.45);
+  /* 浅底上主色加深一档保证对比度（AA） */
+  --accent-primary: #c2410c;
+  --accent-secondary: #db2777;
+  --accent-soft: #9a3412;
+  --accent-rgb: 249, 115, 22;
+  --accent-gradient: linear-gradient(135deg, #f97316, #ec4899);
+  --accent-gradient-h: linear-gradient(90deg, #f97316, #ec4899);
 
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.15);
+  /* 功能色同样加深一档 */
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --danger-deep: #b91c1c;
+
+  --text-primary: #33281f;
+  --text-secondary: rgba(51, 40, 31, 0.72);
+  --text-muted: rgba(51, 40, 31, 0.48);
+
+  --shadow-card: 0 8px 32px rgba(112, 74, 44, 0.12);
+  --shadow-glow: 0 0 20px rgba(249, 115, 22, 0.18);
 
   /* 对话框主题色 */
-  --dialog-bg: #ffffff;
-  --dialog-border: rgba(0, 0, 0, 0.1);
-  --dialog-divider: rgba(0, 0, 0, 0.08);
-  --dialog-input-bg: rgba(0, 0, 0, 0.04);
-  --dialog-input-border: rgba(0, 0, 0, 0.12);
-  --dialog-cancel-bg: rgba(0, 0, 0, 0.06);
-  --dialog-cancel-hover: rgba(0, 0, 0, 0.1);
-  --dialog-day-bg: rgba(0, 0, 0, 0.02);
-  --dialog-day-border: rgba(0, 0, 0, 0.06);
-  --dialog-item-bg: rgba(0, 0, 0, 0.03);
-  --dialog-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
+  --dialog-bg: #fffdfa;
+  --dialog-border: rgba(112, 74, 44, 0.14);
+  --dialog-divider: rgba(112, 74, 44, 0.10);
+  --dialog-input-bg: rgba(112, 74, 44, 0.05);
+  --dialog-input-border: rgba(112, 74, 44, 0.16);
+  --dialog-cancel-bg: rgba(112, 74, 44, 0.07);
+  --dialog-cancel-hover: rgba(112, 74, 44, 0.12);
+  --dialog-day-bg: rgba(112, 74, 44, 0.03);
+  --dialog-day-border: rgba(112, 74, 44, 0.08);
+  --dialog-item-bg: rgba(112, 74, 44, 0.04);
+  --dialog-shadow: 0 24px 80px rgba(112, 74, 44, 0.18);
 }
 
 * {
@@ -153,11 +174,11 @@ button {
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.4);
 }
 .gradient-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 28px rgba(56, 189, 248, 0.55);
+  box-shadow: 0 6px 28px rgba(var(--accent-rgb), 0.55);
 }
 
 .stat-number {
@@ -191,7 +212,7 @@ button {
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 30, 0.72);
+  background: rgba(18, 10, 26, 0.72);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -231,8 +252,8 @@ button {
   padding: 5px 14px;
   border-radius: var(--radius-pill);
 }
-.mode-add { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; }
-.mode-edit { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+.mode-add { background: rgba(var(--accent-rgb), 0.2); color: var(--accent-soft); }
+.mode-edit { background: rgba(var(--accent-rgb), 0.14); color: var(--accent-soft); }
 
 .dialog-body {
   padding: 18px 22px;
@@ -275,8 +296,8 @@ button {
   color-scheme: light dark;
 }
 .text-input:focus {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
 }
 .text-input::placeholder { color: var(--text-muted); }
 .text-input.textarea { resize: none; line-height: 1.6; }
@@ -304,9 +325,9 @@ button {
 .btn-confirm {
   background: var(--accent-gradient);
   color: #fff;
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.4);
 }
-.btn-confirm:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(56, 189, 248, 0.55); }
+.btn-confirm:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(var(--accent-rgb), 0.55); }
 .btn-confirm:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
 /* 图片选择 */
@@ -349,12 +370,12 @@ button {
   font-size: 22px;
   transition: var(--transition);
 }
-.photo-add:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.photo-add:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
 
 /* ===== 无障碍 ===== */
 /* 键盘导航焦点可见性：图标按钮 / 链接统一补 focus ring */
 :focus-visible {
-  outline: 2px solid var(--accent-blue);
+  outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 

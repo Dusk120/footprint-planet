@@ -345,8 +345,8 @@ function isNoteLiked(note) {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 .search-btn, .clear-btn {
@@ -365,7 +365,7 @@ function isNoteLiked(note) {
 
 .search-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.4);
 }
 
 .clear-btn {
@@ -490,7 +490,7 @@ function isNoteLiked(note) {
 
 .page-num:hover {
   background: var(--bg-card-hover);
-  border-color: var(--accent-blue);
+  border-color: var(--accent-primary);
   color: var(--text-primary);
 }
 

@@ -182,7 +182,7 @@ async function submitFeedback() {
 .tab-btn.active {
   background: var(--accent-gradient);
   color: white;
-  box-shadow: 0 2px 12px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 2px 12px rgba(var(--accent-rgb), 0.4);
 }
 
 .form-body {
@@ -211,8 +211,8 @@ async function submitFeedback() {
 }
 .form-textarea:focus {
   outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 .form-textarea::placeholder {
   color: var(--text-muted);
@@ -231,8 +231,8 @@ async function submitFeedback() {
 }
 .form-input:focus {
   outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 .form-input::placeholder {
   color: var(--text-muted);
@@ -291,7 +291,7 @@ async function submitFeedback() {
   transition: var(--transition);
 }
 .upload-area:hover {
-  border-color: var(--accent-blue);
+  border-color: var(--accent-primary);
   background: var(--bg-card-hover);
 }
 

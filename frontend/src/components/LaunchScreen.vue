@@ -68,10 +68,11 @@ function initGlobe(Globe) {
     .width(w)
     .height(h)
 
-  // 大气光晕：内置 atmosphere 蓝白色辉光
+  // 大气光晕：淡蓝（贴合蓝色地球贴图，更自然）。
+  // 拆成分步 setter 确保生效，避免链式调用在部分 globe.gl 版本回落默认色。
   globe.value.showAtmosphere(true)
-    .atmosphereColor('#7dd3fc')
-    .atmosphereAltitude(0.2)
+  globe.value.atmosphereColor('#7dd3fc')
+  globe.value.atmosphereAltitude(0.2)
 
   // 放慢自转；保留拖拽旋转与滚轮缩放操作
   const controls = globe.value.controls()
@@ -169,7 +170,7 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #050a1a;
+  background: #0b0814;
   overflow: hidden;
 }
 
@@ -179,8 +180,8 @@ onUnmounted(() => {
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(circle at 50% 44%, rgba(56, 189, 248, 0.16) 0%, rgba(13, 19, 48, 0) 42%),
-    radial-gradient(ellipse at 50% 45%, #0c1230 0%, #060b1f 58%, #020309 100%);
+    radial-gradient(circle at 50% 44%, rgba(56, 189, 248, 0.16) 0%, rgba(30, 18, 36, 0) 42%),
+    radial-gradient(ellipse at 50% 45%, #1a1226 0%, #100b1a 58%, #06040c 100%);
   transition: opacity 0.9s ease;
 }
 .launch-screen.exiting .launch-bg { opacity: 0; }
@@ -244,7 +245,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   height: 160px;
-  background: linear-gradient(to top, rgba(5, 10, 26, 0.8), transparent);
+  background: linear-gradient(to top, rgba(11, 8, 20, 0.8), transparent);
   z-index: 3;
   pointer-events: none;
 }

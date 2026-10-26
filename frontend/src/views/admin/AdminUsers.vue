@@ -277,8 +277,8 @@ onMounted(load)
   font-weight: 600;
   padding: 1px 7px;
   border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.18);
-  color: #7dd3fc;
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent-soft);
   vertical-align: 1px;
 }
 .admin-reset-dialog { width: 440px; }
