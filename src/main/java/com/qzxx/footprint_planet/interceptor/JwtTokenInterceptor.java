@@ -1,28 +1,34 @@
 package com.qzxx.footprint_planet.interceptor;
 
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.common.RedisKeys;
 import com.qzxx.footprint_planet.config.JwtProperties;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.entity.User;
 import com.qzxx.footprint_planet.mapper.UserMapper;
 import com.qzxx.footprint_planet.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.concurrent.TimeUnit;
+
 @Component
 @Slf4j
 public class JwtTokenInterceptor implements HandlerInterceptor {
-    @Autowired
+    @Resource
     private JwtProperties jwtProperties;
-    @Autowired
+    @Resource
     private UserMapper userMapper;
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -88,8 +94,24 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
 
     /** 账号存在且未被禁用（status = 0）才算有效 */
     private boolean isActiveUser(Long userId) {
+        try {
+            Object status = redisTemplate.opsForValue().get(RedisKeys.userStatus(userId));
+            if (status != null) {
+                return Integer.valueOf(0).equals(status);
+            }
+        } catch (Exception e) {
+            log.warn("读取用户状态缓存失败，降级回库: {}", e.getMessage());
+        }
         User user = userMapper.selectById(userId);
-        return user != null && Integer.valueOf(0).equals(user.getStatus());
+        boolean active = user != null && Integer.valueOf(0).equals(user.getStatus());
+        if (user != null) {
+            try {
+                redisTemplate.opsForValue().set(RedisKeys.userStatus(userId), user.getStatus(), 5, TimeUnit.MINUTES);
+            } catch (Exception e) {
+                // 写失败忽略，下次继续回库
+            }
+        }
+        return active;
     }
 
     @Override

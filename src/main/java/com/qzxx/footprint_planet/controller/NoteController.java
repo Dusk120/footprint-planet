@@ -1,6 +1,8 @@
 package com.qzxx.footprint_planet.controller;
 
 
+
+import jakarta.annotation.Resource;
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.NoteDTO;
 import com.qzxx.footprint_planet.dto.request.NoteLikeDTO;
@@ -10,13 +12,12 @@ import com.qzxx.footprint_planet.vo.NoteLikeVO;
 import com.qzxx.footprint_planet.vo.NoteVO;
 import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/notes")
 public class NoteController {
-    @Autowired
+    @Resource
     private NoteService noteService;
 
     @GetMapping

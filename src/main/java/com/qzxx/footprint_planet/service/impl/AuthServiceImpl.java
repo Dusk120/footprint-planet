@@ -1,5 +1,7 @@
 package com.qzxx.footprint_planet.service.impl;
 
+
+import jakarta.annotation.Resource;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qzxx.footprint_planet.common.BusinessException;
@@ -15,7 +17,6 @@ import com.qzxx.footprint_planet.service.CaptchaService;
 import com.qzxx.footprint_planet.utils.JwtUtil;
 import com.qzxx.footprint_planet.vo.LoginVO;
 import com.qzxx.footprint_planet.vo.UserVO;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,15 +28,15 @@ import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
-    @Autowired
+    @Resource
     private PasswordEncoder passwordEncoder;
-    @Autowired
+    @Resource
     private JwtProperties jwtProperties;
-    @Autowired
+    @Resource
     private CaptchaService captchaService;
-    @Autowired
+    @Resource
     private UserMapper userMapper;
-    @Autowired
+    @Resource
     private VisitedCityMapper visitedCityMapper;
 
     @Override

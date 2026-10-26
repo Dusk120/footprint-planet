@@ -1,5 +1,6 @@
 package com.qzxx.footprint_planet.service.impl;
 
+import com.qzxx.footprint_planet.common.RedisKeys;
 import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.HotService;
 import com.qzxx.footprint_planet.vo.HotCityVO;
@@ -12,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class HotServiceImpl implements HotService {
-    private static final String KEY = "hot_cities";
     @Resource
     private VisitedCityMapper visitedCityMapper;
     @Resource
@@ -21,12 +21,12 @@ public class HotServiceImpl implements HotService {
 
     @Override
     public List<HotCityVO> getHotDestinations() {
-        Object cached = redisTemplate.opsForValue().get(KEY);
+        Object cached = redisTemplate.opsForValue().get(RedisKeys.HOT_CITIES);
         if (cached instanceof List<?> list) {
             return list.stream().map(HotCityVO.class::cast).toList();
         }
         List<HotCityVO> hotCityVOS = visitedCityMapper.selectHotCities();
-        redisTemplate.opsForValue().set(KEY, hotCityVOS, 24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(RedisKeys.HOT_CITIES, hotCityVOS, 24, TimeUnit.HOURS);
         return hotCityVOS;
     }
 }

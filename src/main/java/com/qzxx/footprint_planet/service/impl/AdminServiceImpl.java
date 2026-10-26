@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.common.RedisKeys;
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.ResetPasswordDTO;
@@ -21,7 +22,7 @@ import com.qzxx.footprint_planet.service.AdminService;
 import com.qzxx.footprint_planet.service.HotService;
 import com.qzxx.footprint_planet.vo.*;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -47,6 +48,8 @@ public class AdminServiceImpl implements AdminService {
     private VisitedCityMapper visitedCityMapper;
     @Resource
     private PasswordEncoder passwordEncoder;
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
 
     @Override
@@ -135,6 +138,11 @@ public class AdminServiceImpl implements AdminService {
             throw new BusinessException(400, "不能修改自己的状态");
         user.setStatus(updateUserStatusDTO.getStatus());
         userMapper.updateById(user);
+        try {
+            redisTemplate.delete(RedisKeys.userStatus(id));
+        } catch (Exception e) {
+            // 缓存失效失败不阻断主流程；Redis 挂时拦截器会降级回库，禁用仍即时生效
+        }
         return null;
     }
 

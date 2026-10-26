@@ -5,6 +5,7 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.common.RedisKeys;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.VisitedCityDTO;
 import com.qzxx.footprint_planet.entity.VisitedCity;
@@ -25,7 +26,6 @@ import java.util.Map;
 
 @Service
 public class VisitedCityServiceImpl implements VisitedCityService {
-    private static final String KEY = "hot_cities";
     @Resource
     private VisitedCityMapper visitedCityMapper;
     @Resource
@@ -99,7 +99,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         // 未填游玩时间的记录按本次点亮日期兜底（完全空的记录保留）
         fillRecordDates(visitedCity.getRecords(), visitedCity.getLightDate());
         visitedCityMapper.insert(visitedCity);
-        redisTemplate.delete(KEY);
+        redisTemplate.delete(RedisKeys.HOT_CITIES);
         return visitedCity;
     }
 
@@ -131,7 +131,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         if (!visitedCity.getUserId().equals(BaseContext.getCurrentId())) {
             throw new BusinessException(403, "无权限删除");
         }
-        redisTemplate.delete(KEY);
+        redisTemplate.delete(RedisKeys.HOT_CITIES);
         visitedCityMapper.deleteById(id);
     }
 

@@ -1,12 +1,13 @@
 package com.qzxx.footprint_planet.controller;
 
+
+import jakarta.annotation.Resource;
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.VisitedCityDTO;
 import com.qzxx.footprint_planet.entity.VisitedCity;
 import com.qzxx.footprint_planet.service.VisitedCityService;
 import com.qzxx.footprint_planet.vo.MemoryVO;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/visited-cities")
 public class VisitedCityController {
-    @Autowired
+    @Resource
     private VisitedCityService visitedCityService;
 
     @GetMapping

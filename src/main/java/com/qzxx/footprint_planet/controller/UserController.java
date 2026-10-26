@@ -1,5 +1,7 @@
 package com.qzxx.footprint_planet.controller;
 
+
+import jakarta.annotation.Resource;
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.UpdateProfileDTO;
 import com.qzxx.footprint_planet.entity.Plan;
@@ -8,13 +10,12 @@ import com.qzxx.footprint_planet.vo.AuthorProfileVO;
 import com.qzxx.footprint_planet.vo.PageVO;
 import com.qzxx.footprint_planet.vo.UserVO;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
-    @Autowired
+    @Resource
     private UserService userService;
     @PutMapping("/me")
     public Result<UserVO> updateMe(@RequestBody @Valid UpdateProfileDTO updateProfileDTO) {

@@ -1,18 +1,19 @@
 package com.qzxx.footprint_planet.controller;
 
+
+import jakarta.annotation.Resource;
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.PlanDTO;
 import com.qzxx.footprint_planet.entity.Plan;
 import com.qzxx.footprint_planet.service.PlanService;
 import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/plans")
 public class PlanController {
-    @Autowired
+    @Resource
     private PlanService planService;
 
     @GetMapping

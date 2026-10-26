@@ -1,8 +1,9 @@
 package com.qzxx.footprint_planet.config;
 
+
+import jakarta.annotation.Resource;
 import com.qzxx.footprint_planet.interceptor.JwtTokenInterceptor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -12,7 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Slf4j
 public class WebMvcConfiguration implements WebMvcConfigurer {
 
-    @Autowired
+    @Resource
     private JwtTokenInterceptor jwtTokenInterceptor;
 
     @Override

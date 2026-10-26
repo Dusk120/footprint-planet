@@ -1,5 +1,7 @@
 package com.qzxx.footprint_planet.controller;
 
+
+import jakarta.annotation.Resource;
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.CommentDTO;
 import com.qzxx.footprint_planet.dto.request.CommentLikeDTO;
@@ -8,14 +10,13 @@ import com.qzxx.footprint_planet.vo.CommentVO;
 import com.qzxx.footprint_planet.vo.NoteLikeVO;
 import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/notes/{noteId}/comments")
 public class CommentController {
 
-    @Autowired
+    @Resource
     private CommentService commentService;
 
     @GetMapping

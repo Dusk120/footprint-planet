@@ -1,5 +1,7 @@
 package com.qzxx.footprint_planet.controller;
 
+
+import jakarta.annotation.Resource;
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.ResetPasswordDTO;
 import com.qzxx.footprint_planet.dto.request.UpdateUserStatusDTO;
@@ -8,13 +10,12 @@ import com.qzxx.footprint_planet.vo.AdminUserDetailVO;
 import com.qzxx.footprint_planet.vo.AdminUserVO;
 import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
-    @Autowired
+    @Resource
     private AdminService adminService;
 
     @GetMapping
