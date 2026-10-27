@@ -25,6 +25,11 @@ public class NoteController {
         return Result.success(noteService.getNotes(noteQueryDTO));
     }
 
+    @GetMapping("/{id}")
+    public Result<NoteVO> getNote(@PathVariable Long id) {
+        return Result.success(noteService.getNote(id));
+    }
+
     @PostMapping
     public Result<NoteVO> addNote(@RequestBody @Valid NoteDTO noteDTO) {
         return Result.success(noteService.addNote(noteDTO));

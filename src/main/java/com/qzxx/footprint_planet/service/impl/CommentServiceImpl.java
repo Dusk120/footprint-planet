@@ -18,6 +18,7 @@ import com.qzxx.footprint_planet.mapper.NoteCommentMapper;
 import com.qzxx.footprint_planet.mapper.NoteMapper;
 import com.qzxx.footprint_planet.mapper.UserMapper;
 import com.qzxx.footprint_planet.service.CommentService;
+import com.qzxx.footprint_planet.service.NotificationsService;
 import com.qzxx.footprint_planet.vo.CommentVO;
 import com.qzxx.footprint_planet.vo.NoteLikeVO;
 import com.qzxx.footprint_planet.vo.PageVO;
@@ -46,6 +47,8 @@ public class CommentServiceImpl implements CommentService {
     private NoteMapper noteMapper;
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private NotificationsService notificationsService;
 
 
     @Override
@@ -179,6 +182,15 @@ public class CommentServiceImpl implements CommentService {
         }
         boolean isAdmin = "ADMIN".equals(BaseContext.getCurrentRole());
         Long noteAuthorId = note.getAuthorId();
+        // 顶层评论通知笔记作者；回复通知被回复的评论作者（notify 内部已排除自己）
+        if (parentId == null) {
+            notificationsService.notify(noteAuthorId, "comment", noteId, note.getTitle(), "评论了你的笔记");
+        } else {
+            NoteComment parent = noteCommentMapper.selectById(parentId);
+            if (parent != null) {
+                notificationsService.notify(parent.getUserId(), "reply", noteId, note.getTitle(), "回复了你的评论");
+            }
+        }
         return toCommentVO(newNoteComment, authorMap, Set.of(), me, isAdmin, noteAuthorId);
     }
 
@@ -236,6 +248,12 @@ public class CommentServiceImpl implements CommentService {
                     .eq(CommentLike::getUserId, userId));
         }
         noteLikeVO.setLikes(noteCommentMapper.selectById(commentId).getLikes());
+        // 点赞成功才通知（取消点赞不通知）；notify 内部已排除自己给自己点赞
+        if (commentLikeDTO.getLike() && count == 0) {
+            Note note = noteMapper.selectById(noteId);
+            notificationsService.notify(comment.getUserId(), "like_comment", noteId,
+                    note != null ? note.getTitle() : null, "点赞了你的评论");
+        }
         return noteLikeVO;
     }
 }

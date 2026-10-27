@@ -291,7 +291,27 @@ INSERT INTO feedback (id, content, contact, handled, created_at) VALUES
 (3, '【体验吐槽】点赞图标不太明显，建议换成实心的', 'wechat: xiaoA', 0, '2026-08-27 15:00:00');
 
 -- ------------------------------------------------------------
--- 9. 热门目的地（不建表）
+-- 9. notification（消息通知：点赞/评论/回复实时推送 + 落库）
+-- ------------------------------------------------------------
+CREATE TABLE notification (
+  id              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+  user_id         BIGINT       NOT NULL COMMENT '接收者用户 id',
+  type            VARCHAR(20)  NOT NULL COMMENT '类型：like_note / comment / reply / like_comment',
+  sender_id       BIGINT       NOT NULL COMMENT '触发者用户 id',
+  sender_nickname VARCHAR(50)  DEFAULT NULL COMMENT '触发者昵称（冗余，便于列表展示）',
+  sender_avatar   VARCHAR(255) DEFAULT NULL COMMENT '触发者头像',
+  note_id         BIGINT       DEFAULT NULL COMMENT '关联笔记 id',
+  note_title      VARCHAR(100) DEFAULT NULL COMMENT '关联笔记标题',
+  content         VARCHAR(200) DEFAULT NULL COMMENT '摘要文案，如「点赞了你的笔记」',
+  is_read         TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '已读：0 未读 / 1 已读',
+  created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (id),
+  KEY idx_user_read (user_id, is_read),
+  CONSTRAINT fk_notify_user FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息通知（点赞/评论/回复）';
+
+-- ------------------------------------------------------------
+-- 10. 热门目的地（不建表）
 -- 社区侧栏「热门目的地 Top5」不再手工维护，
 -- 由 visited_city 表按点亮用户数实时统计（见接口文档 4.6 / 5.1）。
 -- ------------------------------------------------------------

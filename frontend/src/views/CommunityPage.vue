@@ -1,12 +1,16 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app'
 import CommunityStream from '../components/CommunityStream.vue'
 import AuthorProfile from '../components/AuthorProfile.vue'
 import NoteDetailPanel from '../components/NoteDetailPanel.vue'
 import { useToast } from '../composables/useToast'
+import { noteApi } from '../api'
 
 const store = useAppStore()
+const route = useRoute()
+const router = useRouter()
 const { show: toast } = useToast()
 
 const currentView = ref('stream') // 'stream' | 'author' | 'note'
@@ -65,6 +69,24 @@ function handleBackFromNote() {
 onMounted(() => {
   store.loadHot()
 })
+
+// 监听 noteId：从通知跳转进来定位到对应笔记。
+// 用 watch（immediate）而不是 onMounted——在社区页内点通知时组件已挂载，onMounted 不会重新执行。
+watch(
+  () => route.query.noteId,
+  async (noteId) => {
+    if (!noteId) return
+    try {
+      const note = await noteApi.get(noteId)
+      handleNoteClick(note)
+    } catch (e) {
+      toast(e.message || '笔记不存在或已删除', 'error')
+    }
+    // 清除 query，避免刷新/再次点击重复触发
+    router.replace({ path: '/community' })
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

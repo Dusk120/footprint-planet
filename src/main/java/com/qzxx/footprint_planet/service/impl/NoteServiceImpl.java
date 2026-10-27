@@ -23,6 +23,7 @@ import com.qzxx.footprint_planet.mapper.NoteMapper;
 import com.qzxx.footprint_planet.mapper.UserMapper;
 import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.NoteService;
+import com.qzxx.footprint_planet.service.NotificationsService;
 import com.qzxx.footprint_planet.vo.LocationVO;
 import com.qzxx.footprint_planet.vo.NoteLikeVO;
 import com.qzxx.footprint_planet.vo.NoteVO;
@@ -53,6 +54,8 @@ public class NoteServiceImpl implements NoteService {
     private UserMapper userMapper;
     @Resource
     private VisitedCityMapper visitedCityMapper;
+    @Resource
+    private NotificationsService notificationsService;
 
     @Override
     public PageVO<NoteVO> getNotes(NoteQueryDTO noteQueryDTO) {
@@ -90,6 +93,19 @@ public class NoteServiceImpl implements NoteService {
         pageVO.setPage(resultPage.getCurrent());
         pageVO.setPageSize(resultPage.getSize());
         return pageVO;
+    }
+
+    @Override
+    public NoteVO getNote(Long id) {
+        Note note = noteMapper.selectById(id);
+        if (note == null) {
+            throw new BusinessException(404, "笔记不存在");
+        }
+        List<Note> single = List.of(note);
+        Map<Long, User> authors = loadAuthors(single);
+        Set<Long> likedIds = loadLikedNoteIds(single);
+        Map<Long, Integer> commentCounts = loadCommentCounts(single);
+        return toVO(note, authors.get(note.getAuthorId()), likedIds.contains(id), commentCounts.getOrDefault(id, 0));
     }
 
     @Override
@@ -161,6 +177,10 @@ public class NoteServiceImpl implements NoteService {
                     .eq(NoteLike::getNoteId, id));
         }
         noteLikeVO.setLikes(noteMapper.selectById(id).getLikes());
+        // 点赞成功才通知（取消点赞不通知）；notify 内部已排除自己给自己点赞
+        if (noteLikeDTO.getLike() && likeCount == 0) {
+            notificationsService.notify(note.getAuthorId(), "like_note", id, note.getTitle(), "点赞了你的笔记");
+        }
         return noteLikeVO;
     }
 

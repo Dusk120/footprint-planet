@@ -2,6 +2,7 @@ import { http } from './http'
 
 export const noteApi = {
   list: (params) => http.get('/notes', params),
+  get: (id) => http.get(`/notes/${id}`),
   create: (data) => http.post('/notes', data),
   remove: (id) => http.delete(`/notes/${id}`),
   like: (id, like) => http.post(`/notes/${id}/like`, { like }),

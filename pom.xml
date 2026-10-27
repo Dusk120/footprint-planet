@@ -35,6 +35,12 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
+		<!-- WebSocket（STOMP 消息通知） -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
 		<!-- Bean validation for request DTOs -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

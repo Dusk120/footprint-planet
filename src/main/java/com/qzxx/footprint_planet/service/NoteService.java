@@ -11,6 +11,8 @@ import com.qzxx.footprint_planet.vo.PageVO;
 public interface NoteService {
     PageVO<NoteVO> getNotes(NoteQueryDTO noteQueryDTO);
 
+    NoteVO getNote(Long id);
+
     NoteVO addNote( NoteDTO noteDTO);
 
     void deleteNote(Long id);

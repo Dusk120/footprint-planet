@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '../../stores/app'
+import NotificationBell from '../NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -91,6 +92,7 @@ function handleThemeToggle() {
 
     <div class="sidebar-footer">
       <div class="footer-actions">
+        <NotificationBell v-if="store.isLoggedIn" />
         <button class="theme-toggle" title="切换主题" @click="handleThemeToggle">
           <!-- 深色主题显示太阳（点击切到浅色），浅色主题显示月亮（点击切到深色） -->
           <svg v-if="store.theme === 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>

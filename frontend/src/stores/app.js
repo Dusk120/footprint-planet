@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi, userApi, visitedApi, planApi, noteApi, hotApi, getToken, setToken } from '../api'
+import { useNotificationStore } from './notification'
 
 const THEME_KEY = 'footprint-planet:theme'
 
@@ -60,6 +61,7 @@ export const useAppStore = defineStore('app', () => {
     isLoggedIn.value = true
     setUserData(res.user)
     await loadLoginData()
+    useNotificationStore().connect()
     return true
   }
 
@@ -69,6 +71,7 @@ export const useAppStore = defineStore('app', () => {
     isLoggedIn.value = true
     setUserData(res.user)
     await loadLoginData()
+    useNotificationStore().connect()
     return true
   }
 
@@ -77,6 +80,7 @@ export const useAppStore = defineStore('app', () => {
     setToken(null)
     isLoggedIn.value = false
     resetData()
+    useNotificationStore().disconnect()
   }
 
   // 应用启动时恢复登录态。只有「拿不到当前用户」才说明 token 失效
@@ -92,6 +96,7 @@ export const useAppStore = defineStore('app', () => {
       return
     }
     setUserData(u)
+    useNotificationStore().connect()
     // 足迹列表是次要数据，单独 try：原来它和 /auth/me 共用一个 catch，
     // 后端重启或网络抖动时刷新页面，会被当成 token 失效直接登出
     try {
