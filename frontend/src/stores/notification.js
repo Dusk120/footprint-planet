@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { Client } from '@stomp/stompjs'
 import { getToken } from '../api/http'
 import { notificationApi } from '../api/notification'
@@ -7,9 +7,27 @@ import { useToast } from '../composables/useToast'
 
 // 通知字段与后端 NotificationVO / WebSocket payload 保持一致：
 // { id, type, senderNickname, senderAvatar, noteId, noteTitle, content, isRead, createdAt }
+
+const PAGE_SIZE = 8
+
+// type 分类：后端 4 种细类型，前端归为「点赞 / 评论」两个 tab
+const LIKE_TYPES = ['like_note', 'like_comment']
+const COMMENT_TYPES = ['comment', 'reply']
+
+function tabOf(type) {
+  return LIKE_TYPES.includes(type) ? 'like' : 'comment'
+}
+
 export const useNotificationStore = defineStore('notification', () => {
-  const notifications = ref([])
-  const unreadCount = ref(0)
+  // 两个 tab 各自的游标分页状态（列表数据、游标、是否还有、加载中、是否已加载过）
+  const tabs = reactive({
+    like: { items: [], cursor: null, hasMore: true, loading: false, loaded: false },
+    comment: { items: [], cursor: null, hasMore: true, loading: false, loaded: false },
+  })
+  const activeTab = ref('like')
+  // 分 tab 未读数；总未读（铃铛红点）= 两者之和
+  const unread = reactive({ like: 0, comment: 0 })
+  const totalUnread = computed(() => unread.like + unread.comment)
   const connected = ref(false)
 
   const { show } = useToast()
@@ -22,8 +40,12 @@ export const useNotificationStore = defineStore('notification', () => {
     } catch (e) {
       return
     }
-    notifications.value.unshift(n)
-    if (n.isRead !== 1) unreadCount.value += 1
+    const tab = tabOf(n.type)
+    if (n.isRead !== 1) unread[tab] += 1
+    // 若该 tab 已加载过，把新通知插到头部；游标分页是「id 更小才往后查」，
+    // 头部插入的新数据 id 更大，不会被后续翻页重复查到，不会破坏游标
+    const s = tabs[tab]
+    if (s.loaded) s.items.unshift(n)
     show(`${n.senderNickname || '有人'}：${n.content || '有新通知'}`, 'info')
   }
 
@@ -61,43 +83,60 @@ export const useNotificationStore = defineStore('notification', () => {
     connected.value = false
   }
 
-  async function fetchNotifications({ page = 1, pageSize = 20 } = {}) {
-    const res = await notificationApi.list({ page, pageSize })
-    const fetched = res?.list || []
-    const fetchedIds = new Set(fetched.map((x) => x.id))
-    // 拉取期间通过 WebSocket 新到、且不在返回结果里的通知，避免被整体覆盖丢数据
-    const pending = notifications.value.filter((x) => x.id != null && !fetchedIds.has(x.id))
-    notifications.value = [...pending, ...fetched]
-    // 未读数：以后端为准，再补上 pending 里未读的（后端快照尚未计入）
-    const pendingUnread = pending.filter((x) => x.isRead !== 1).length
-    unreadCount.value = (res?.unreadCount ?? 0) + pendingUnread
+  // 拉取某一 tab：reset=true 拉第一页（清空重载），否则按游标加载下一页
+  async function fetchTab(tab, { reset = false } = {}) {
+    const s = tabs[tab]
+    if (s.loading) return
+    if (!reset && !s.hasMore) return
+    s.loading = true
+    try {
+      const res = await notificationApi.list({
+        type: tab,
+        cursor: reset ? null : s.cursor,
+        pageSize: PAGE_SIZE,
+      })
+      if (reset) s.items = []
+      s.items.push(...(res?.list || []))
+      s.cursor = res?.nextCursor ?? null
+      s.hasMore = res?.hasMore === true
+      s.loaded = true
+      // 未读数以后端为准；后端只给「当前 type 未读 + 全局未读」，另一个 type 用差值反推
+      const cur = res?.unreadCount ?? 0
+      const total = res?.totalUnreadCount ?? 0
+      const other = tab === 'like' ? 'comment' : 'like'
+      unread[tab] = cur
+      unread[other] = Math.max(0, total - cur)
+    } finally {
+      s.loading = false
+    }
   }
 
-  async function markRead(id) {
+  async function markRead(id, tab) {
     await notificationApi.read(id)
-    // 本地立即标记，避免红点闪烁
-    const n = notifications.value.find((x) => x.id === id)
-    if (n) n.isRead = 1
-    // 重新拉取，用后端准确未读数纠正本地 unreadCount（WebSocket +1 与 fetch 覆盖存在竞态，
-    // 本地 -1 可能残留虚高值；后端此刻已标记 is_read=1，返回的 unreadCount 才是准的）
-    await fetchNotifications().catch(() => {})
+    const n = tabs[tab].items.find((x) => x.id === id)
+    if (n && n.isRead !== 1) {
+      n.isRead = 1
+      unread[tab] = Math.max(0, unread[tab] - 1)
+    }
   }
 
-  async function markAllRead() {
-    await notificationApi.readAll()
-    notifications.value.forEach((n) => {
+  async function markAllRead(tab) {
+    await notificationApi.readAll(tab)
+    tabs[tab].items.forEach((n) => {
       n.isRead = 1
     })
-    unreadCount.value = 0
+    unread[tab] = 0
   }
 
   return {
-    notifications,
-    unreadCount,
+    tabs,
+    activeTab,
+    unread,
+    totalUnread,
     connected,
     connect,
     disconnect,
-    fetchNotifications,
+    fetchTab,
     markRead,
     markAllRead,
   }

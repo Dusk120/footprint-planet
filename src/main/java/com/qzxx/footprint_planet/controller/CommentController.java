@@ -6,9 +6,9 @@ import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.CommentDTO;
 import com.qzxx.footprint_planet.dto.request.CommentLikeDTO;
 import com.qzxx.footprint_planet.service.CommentService;
+import com.qzxx.footprint_planet.vo.CommentPageVO;
 import com.qzxx.footprint_planet.vo.CommentVO;
 import com.qzxx.footprint_planet.vo.NoteLikeVO;
-import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,10 +20,10 @@ public class CommentController {
     private CommentService commentService;
 
     @GetMapping
-    public Result<PageVO<CommentVO>> getComments(@PathVariable Long noteId,
-                                                 @RequestParam(defaultValue = "1") Integer page,
-                                                 @RequestParam(defaultValue = "10") Integer pageSize) {
-        return Result.success(commentService.getComments(noteId, page, pageSize));
+    public Result<CommentPageVO> getComments(@PathVariable Long noteId,
+                                             @RequestParam(required = false) Long cursor,
+                                             @RequestParam(defaultValue = "10") Integer pageSize) {
+        return Result.success(commentService.getComments(noteId, cursor, pageSize));
     }
 
     @PostMapping

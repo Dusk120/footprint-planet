@@ -20,8 +20,7 @@ const { show: toast } = useToast()
 const comments = ref([])
 const loading = ref(false)
 const hasMore = ref(true)
-const page = ref(1)
-const total = ref(0)
+const nextCursor = ref(null)
 const PAGE_SIZE = 10 // 滚动加载，一次多拿几条，免得刚填满容器就又要加载
 
 // 后端评论接口不存在时（code 404）静默降级：不弹 toast、隐藏输入框
@@ -76,21 +75,13 @@ async function loadComments() {
 
   loading.value = true
   try {
-    const res = await store.getComments(props.noteId, { page: page.value, pageSize: PAGE_SIZE })
-    const list = res.list || []
-    if (page.value === 1) {
-      comments.value = list
-    } else {
-      comments.value.push(...list)
-    }
-    // 用 total 判「还有没有下一页」：比 list.length === PAGE_SIZE 准，
-    // 否则顶层评论总数正好是 PAGE_SIZE 整数倍时会白空转一次。
-    // total 缺失时退回「这一页有没有拿满」，免得后端没给 total 就只剩第一页。
-    total.value = res.total ?? 0
-    hasMore.value = res.total != null
-      ? comments.value.length < res.total
-      : list.length === PAGE_SIZE
-    page.value++
+    const res = await store.getComments(props.noteId, {
+      cursor: nextCursor.value,
+      pageSize: PAGE_SIZE,
+    })
+    comments.value.push(...(res.list || []))
+    nextCursor.value = res.nextCursor ?? null
+    hasMore.value = res.hasMore === true
   } catch (e) {
     if (isEndpointMissing(e)) {
       commentsReady.value = false
@@ -105,9 +96,8 @@ async function loadComments() {
 
 async function reloadFirstPage() {
   comments.value = []
-  page.value = 1
+  nextCursor.value = null
   hasMore.value = true
-  total.value = 0
   await loadComments()
   await fillContainer()
 }
@@ -259,9 +249,8 @@ function teardownObserver() {
 async function init() {
   teardownObserver()
   comments.value = []
-  page.value = 1
+  nextCursor.value = null
   hasMore.value = true
-  total.value = 0
   commentsReady.value = true
   await loadComments()
   await fillContainer()

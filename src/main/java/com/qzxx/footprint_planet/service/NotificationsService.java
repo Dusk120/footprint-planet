@@ -4,11 +4,17 @@ import com.qzxx.footprint_planet.vo.NotificationPageVO;
 
 public interface NotificationsService {
 
-    NotificationPageVO getNotifications(Integer page, Integer pageSize);
+    /**
+     * 游标分页拉取某类通知（点赞 / 评论）。
+     * @param type     通知分类，取值仅两种：{@code "like"} 或 {@code "comment"}。
+     * @param cursor   游标（上一页最后一条通知的 id），第一页传 {@code null}
+     * @param pageSize 每页条数（实现需多查 1 条判断 hasMore）。
+     */
+    NotificationPageVO getNotifications(String type, Long cursor, Integer pageSize);
 
     Void readNotification(Long id);
 
-    Void readAllNotifications();
+    Void readAllNotifications(String type);
 
     /**
      * 触发通知：sender 固定为当前登录用户，落库 + 实时推送（不通知自己）。

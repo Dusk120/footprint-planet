@@ -2,8 +2,6 @@ package com.qzxx.footprint_planet.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.context.BaseContext;
@@ -19,9 +17,9 @@ import com.qzxx.footprint_planet.mapper.NoteMapper;
 import com.qzxx.footprint_planet.mapper.UserMapper;
 import com.qzxx.footprint_planet.service.CommentService;
 import com.qzxx.footprint_planet.service.NotificationsService;
+import com.qzxx.footprint_planet.vo.CommentPageVO;
 import com.qzxx.footprint_planet.vo.CommentVO;
 import com.qzxx.footprint_planet.vo.NoteLikeVO;
-import com.qzxx.footprint_planet.vo.PageVO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,19 +50,28 @@ public class CommentServiceImpl implements CommentService {
 
 
     @Override
-    public PageVO<CommentVO> getComments(Long noteId, Integer page, Integer pageSize) {
+    public CommentPageVO getComments(Long noteId, Long cursor, Integer pageSize) {
         Note note = noteMapper.selectById(noteId);
         if (note == null) {
             throw new BusinessException(404,"笔记不存在");
         }
-        Page<NoteComment> noteCommentPage = new Page<>(page, pageSize);
-        Page<NoteComment> result = noteCommentMapper.selectPage(noteCommentPage, new LambdaQueryWrapper<NoteComment>()
+        Page<NoteComment> noteCommentPage = new Page<>(1, pageSize+1);
+        LambdaQueryWrapper<NoteComment> noteCommentLambdaQueryWrapper = new LambdaQueryWrapper<NoteComment>()
                 .eq(NoteComment::getNoteId, noteId).isNull(NoteComment::getParentId)
-                .orderByDesc(NoteComment::getCreatedAt, NoteComment::getLikes));
+                .orderByDesc(NoteComment::getId);
+        if(cursor != null){
+            noteCommentLambdaQueryWrapper.lt(NoteComment::getId, cursor);
+        }
+        Page<NoteComment> result = noteCommentMapper.selectPage(noteCommentPage, noteCommentLambdaQueryWrapper);
         List<NoteComment> tops = result.getRecords();
         if (tops.isEmpty()) {
-            return new PageVO<>(List.of(), result.getTotal(), result.getCurrent(), result.getSize());
+            return new CommentPageVO(List.of(),  null, false);
         }
+        boolean hasMore = tops.size() > pageSize;
+        if (hasMore) {
+            tops=tops.subList(0, pageSize);
+        }
+        Long nextCursor = hasMore ? tops.get(pageSize - 1).getId() : null;
         // 顶层评论（父评论）的 id：拿它们去把这一页所有回复一次性查出来
         List<Long> commentIds = tops.stream()
                 .map(NoteComment::getId).filter(Objects::nonNull)
@@ -109,7 +116,7 @@ public class CommentServiceImpl implements CommentService {
             list.add(vo);
         }
         // total 是「顶层评论」总数（分页只作用于顶层，不含回复），前端滚动分页靠它判断还有没有下一页
-        return new PageVO<>(list, result.getTotal(), result.getCurrent(), result.getSize());
+        return new CommentPageVO(list, nextCursor, hasMore);
     }
 
     /**

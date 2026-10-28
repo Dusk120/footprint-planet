@@ -6,16 +6,17 @@ import com.qzxx.footprint_planet.vo.NotificationPageVO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
-@RequestMapping("api/notifications")
 @RestController
+@RequestMapping("api/notifications")
 public class NotificationsController {
     @Resource
     private NotificationsService notificationService;
 
     @GetMapping
-    public Result<NotificationPageVO> getNotifications(@RequestParam(defaultValue = "1") Integer page,
+    public Result<NotificationPageVO> getNotifications(@RequestParam String type,
+                                                       @RequestParam(required = false) Long cursor,
                                                        @RequestParam(defaultValue = "20") Integer pageSize) {
-        return Result.success(notificationService.getNotifications(page, pageSize));
+        return Result.success(notificationService.getNotifications(type, cursor, pageSize));
     }
 
     @PutMapping("/{id}/read")
@@ -24,7 +25,7 @@ public class NotificationsController {
     }
 
     @PostMapping("/read-all")
-    public Result<Void> readAllNotifications() {
-        return Result.success(notificationService.readAllNotifications());
+    public Result<Void> readAllNotifications(@RequestParam String type) {
+        return Result.success(notificationService.readAllNotifications(type));
     }
 }

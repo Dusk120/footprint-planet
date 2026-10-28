@@ -34,23 +34,43 @@ public class NotificationsServiceImpl implements NotificationsService {
     private SimpMessagingTemplate messagingTemplate;
 
     @Override
-    public NotificationPageVO getNotifications(Integer page, Integer pageSize) {
+    public NotificationPageVO getNotifications(String type, Long cursor, Integer pageSize) {
         Long userId = BaseContext.getCurrentId();
-        Page<Notification> pageData = new Page<>(page, pageSize);
-        Page<Notification> resultPage = notificationsMapper.selectPage(pageData,
-                new LambdaQueryWrapper<Notification>()
-                        .eq(Notification::getUserId, userId)
-                        .orderByDesc(Notification::getCreatedAt));
+        List<String> types = typesOf(type);
+        Page<Notification> pageData = new Page<>(1, pageSize+1);
+        LambdaQueryWrapper<Notification> qw = new LambdaQueryWrapper<Notification>()
+                .eq(Notification::getUserId, userId)
+                .in(Notification::getType, types)
+                .orderByDesc(Notification::getId);
+        if (cursor != null) {
+            qw.lt(Notification::getId, cursor);
+        }
+        Page<Notification> resultPage = notificationsMapper.selectPage(pageData, qw);
         List<NotificationVO> list = resultPage.getRecords().stream().map(record -> {
             NotificationVO notificationVO = new NotificationVO();
             BeanUtil.copyProperties(record, notificationVO);
             return notificationVO;
         }).toList();
-        long unread = notificationsMapper.selectCount(
+        boolean hasMore = list.size() > pageSize;
+        if (hasMore){
+            list = list.subList(0, pageSize);
+        }
+        Long nextCursor = hasMore ? list.get(list.size() - 1).getId() : null;
+        long unreadCount = notificationsMapper.selectCount(
+                new LambdaQueryWrapper<Notification>()
+                        .eq(Notification::getUserId, userId)
+                        .in(Notification::getType, types)
+                        .eq(Notification::getIsRead, 0));
+        long totalUnreadCount = notificationsMapper.selectCount(
                 new LambdaQueryWrapper<Notification>()
                         .eq(Notification::getUserId, userId)
                         .eq(Notification::getIsRead, 0));
-        return new NotificationPageVO(list, pageData.getTotal(), pageData.getCurrent(), pageData.getSize(), unread);
+        return new NotificationPageVO(list, nextCursor, hasMore, unreadCount, totalUnreadCount);
+    }
+    private List<String> typesOf(String type) {
+        if ("like".equals(type)) return List.of("like_note", "like_comment");
+        if ("comment".equals(type)) return List.of("comment", "reply");
+        throw new BusinessException(400, "不支持的 type: " + type);
     }
 
     @Override
@@ -65,10 +85,11 @@ public class NotificationsServiceImpl implements NotificationsService {
     }
 
     @Override
-    public Void readAllNotifications() {
+    public Void readAllNotifications(String type) {
         Long userId = BaseContext.getCurrentId();
         notificationsMapper.update(null, new LambdaUpdateWrapper<Notification>()
                 .eq(Notification::getUserId, userId)
+                .in(Notification::getType, typesOf(type))
                 .set(Notification::getIsRead, 1));
         return null;
     }
