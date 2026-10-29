@@ -1,105 +1,433 @@
 package com.qzxx.footprint_planet.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.common.PlanRole;
 import com.qzxx.footprint_planet.context.BaseContext;
-import com.qzxx.footprint_planet.dto.request.PlanDTO;
+import com.qzxx.footprint_planet.dto.request.*;
 import com.qzxx.footprint_planet.entity.Plan;
+import com.qzxx.footprint_planet.entity.PlanCollaborator;
+import com.qzxx.footprint_planet.entity.PlanItem;
+import com.qzxx.footprint_planet.entity.PlanLeg;
+import com.qzxx.footprint_planet.entity.User;
+import com.qzxx.footprint_planet.mapper.PlanCollaboratorMapper;
+import com.qzxx.footprint_planet.mapper.PlanItemMapper;
+import com.qzxx.footprint_planet.mapper.PlanLegMapper;
 import com.qzxx.footprint_planet.mapper.PlanMapper;
+import com.qzxx.footprint_planet.mapper.UserMapper;
 import com.qzxx.footprint_planet.service.PlanService;
+import com.qzxx.footprint_planet.vo.CollaboratorVO;
 import com.qzxx.footprint_planet.vo.PageVO;
+import com.qzxx.footprint_planet.vo.PlanDetailVO;
 import jakarta.annotation.Resource;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PlanServiceImpl implements PlanService {
     @Resource
     private PlanMapper planMapper;
+    @Resource
+    private PlanItemMapper planItemMapper;
+    @Resource
+    private PlanLegMapper planLegMapper;
+    @Resource
+    private PlanCollaboratorMapper planCollaboratorMapper;
+    @Resource
+    private UserMapper userMapper;
+    @Resource
+    private SimpMessagingTemplate messagingTemplate;
+
 
     @Override
     public PageVO<Plan> getPlans(Integer page, Integer pageSize) {
         Long userId = BaseContext.getCurrentId();
         Page<Plan> p = new Page<>(page, pageSize);
         p.addOrder(OrderItem.desc("created_at"));
-        Page<Plan> result = planMapper.selectPage(p,
-                new LambdaQueryWrapper<Plan>().eq(Plan::getUserId, userId));
+        Page<Plan> result=planMapper.selectPage(p,
+                new LambdaQueryWrapper<Plan>()
+                        .eq(Plan::getUserId, userId));
         return new PageVO<>(result.getRecords(), result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Override
-    public Plan addPlan(PlanDTO planDTO) {
-        if(planDTO.getIsPublic() == null){
-            planDTO.setIsPublic(true);
+    public PlanDetailVO getPlan(Long id) {
+        Long userId = BaseContext.getCurrentId();
+        Plan plan = planMapper.selectById(id);
+        if (plan == null) {
+            throw new BusinessException(404, "计划不存在或无权访问");
         }
+        PlanDetailVO planDetailVO = BeanUtil.copyProperties(plan, PlanDetailVO.class);
+        // 一次性查出该计划全部协作人
+        List<PlanCollaborator> allCollaboratorList = planCollaboratorMapper.selectList(
+                new LambdaQueryWrapper<PlanCollaborator>()
+                        .eq(PlanCollaborator::getPlanId, id)
+        );
+        PlanCollaborator myCollaborator = allCollaboratorList.stream()
+                .filter(pc -> pc.getUserId().equals(userId))
+                .findFirst()
+                .orElse(null);
+        String role=null;
+        if(myCollaborator != null){
+            role = myCollaborator.getRole();
+        }
+        if(plan.getUserId().equals(userId)){
+            role = PlanRole.OWNER.name().toLowerCase();
+        }
+        if (role == null&& !plan.getIsPublic()) {
+            throw new BusinessException(404, "计划不存在或无权访问");
+        }
+        else if (role != null) {
+            planDetailVO.setMyRole(role);
+        }
+        else{
+            planDetailVO.setMyRole(PlanRole.VIEWER.name().toLowerCase());
+        }
+        List<PlanItem> planItems = planItemMapper.selectList(new LambdaQueryWrapper<PlanItem>()
+                .eq(PlanItem::getPlanId, id)
+                .orderByAsc(PlanItem::getDayNo, PlanItem::getSortNo));
+        List<PlanLeg> planLegs = planLegMapper.selectList(new LambdaQueryWrapper<PlanLeg>()
+                .eq(PlanLeg::getPlanId, id));
+        // 一次性查出所有协作人
+        Set<Long> userIds = new HashSet<>();
+        userIds.add(plan.getUserId());
+        allCollaboratorList.forEach(c -> userIds.add(c.getUserId()));
+        List<User> userList = userMapper.selectBatchIds(userIds);
+        Map<Long, User> userMap = userList.stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (k1, k2) -> k1));
+        List<CollaboratorVO> collaborators = new ArrayList<>();
+        // 组装owner
+        User ownerUser = userMap.get(plan.getUserId());
+        CollaboratorVO ownerVO = new CollaboratorVO();
+        ownerVO.setUserId(plan.getUserId());
+        ownerVO.setNickname(ownerUser != null ? ownerUser.getNickname() : "未知用户");
+        ownerVO.setAvatar(ownerUser != null ? ownerUser.getAvatar() : User.DEFAULT_AVATAR);
+        ownerVO.setRole("owner");
+        ownerVO.setJoinedAt(plan.getCreatedAt());
+        collaborators.add(ownerVO);
+        // 组装协作人
+        for (PlanCollaborator c : allCollaboratorList) {
+            CollaboratorVO collaboratorVO = new CollaboratorVO();
+            User user = userMap.get(c.getUserId());
+            collaboratorVO.setAvatar(user != null ? user.getAvatar() : User.DEFAULT_AVATAR);
+            collaboratorVO.setNickname(user != null ? user.getNickname() : "未知用户");
+            BeanUtil.copyProperties(c, collaboratorVO);
+            collaborators.add(collaboratorVO);
+        }
+        planDetailVO.setItems(planItems);
+        planDetailVO.setLegs(planLegs);
+        planDetailVO.setCollaborators(collaborators);
+        return planDetailVO;
+    }
+
+    @Override
+    public Plan addPlan(PlanDTO planDTO) {
         Plan plan = new Plan();
         BeanUtil.copyProperties(planDTO, plan);
         plan.setUserId(BaseContext.getCurrentId());
-        plan.setCreatedAt(java.time.LocalDateTime.now());
+        plan.setCreatedAt(LocalDateTime.now());
+        plan.setCollabLocked(false);
+        plan.setCollabDeadline(null);
+        plan.setVersion(0);
         planMapper.insert(plan);
         return plan;
     }
 
     @Override
-    public Plan getPlan(Long id) {
-        Plan plan = planMapper.selectById(id);
-        if (plan == null ) {
-            throw new BusinessException(404,"规划不存在");
-        }
-        if (plan.getUserId().equals(BaseContext.getCurrentId()) ) {
-            return plan;
-        }
-        if (plan.getIsPublic() ) {
-            return plan;
-        }
-        throw new BusinessException(404,"该规划不公开");
-    }
-
-    @Override
     public Plan updatePlan(Long id, PlanDTO planDTO) {
-        Plan plan = planMapper.selectById(id);
-        if (plan == null ) {
-            throw new BusinessException(404,"规划不存在");
+        Plan plan = requireEditor(id);
+        BeanUtil.copyProperties(planDTO, plan,
+                CopyOptions.create()
+                        .setIgnoreNullValue(true)
+                        .setIgnoreProperties("id","userId","version","collabLocked","collabDeadline","createdAt"));
+        int rows = planMapper.updateById(plan);
+        if (rows <= 0) {
+            throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
         }
-        if (!plan.getUserId().equals(BaseContext.getCurrentId()) ) {
-            throw new BusinessException(403,"无权限修改");
-        }
-        BeanUtil.copyProperties(planDTO, plan);
-        planMapper.updateById(plan);
+        broadcast(id, "plan_update");
         return plan;
     }
 
     @Override
     public void deletePlan(Long id) {
-        Plan plan = planMapper.selectById(id);
-        if (plan == null ) {
-            throw new BusinessException(404,"规划不存在");
-        }
-        if (!plan.getUserId().equals(BaseContext.getCurrentId()) ) {
-            throw new BusinessException(403,"无权限删除");
-        }
+       requireOwner(id);
         planMapper.deleteById(id);
+        broadcast(id, "plan_delete");
+    }
+
+    @Transactional
+    @Override
+    public Plan copyPlan(Long id) {
+        Long userId = BaseContext.getCurrentId();
+        Plan source = planMapper.selectById(id);
+        if (source == null) {
+            throw new BusinessException(404, "计划不存在");
+        }
+        if (!Boolean.TRUE.equals(source.getIsPublic()) && getRole(id, userId) == null) {
+            throw new BusinessException(404, "计划不存在或无权访问");
+        }
+        Plan copy = BeanUtil.copyProperties(source, Plan.class,
+                "id", "userId", "version", "collabLocked", "collabDeadline", "createdAt");
+        copy.setUserId(userId);
+        copy.setVersion(0);
+        copy.setCollabLocked(false);
+        copy.setCollabDeadline(null);
+        planMapper.insert(copy);
+        // 复制 plan_item，记录「旧 itemId → 新 itemId」
+        List<PlanItem> items = planItemMapper.selectList(
+                new LambdaQueryWrapper<PlanItem>().eq(PlanItem::getPlanId, id));
+        Map<Long, Long> idMap = new HashMap<>();
+        for (PlanItem item : items) {
+            Long oldId = item.getId();
+            item.setId(null);               // 置空 → 走自增，否则主键冲突
+            item.setPlanId(copy.getId());
+            item.setCreatedAt(LocalDateTime.now());        // 置空 → 数据库 DEFAULT CURRENT_TIMESTAMP 生成新时间
+            planItemMapper.insert(item);
+            idMap.put(oldId, item.getId()); // 记下旧→新映射
+        }
+        //  复制 plan_leg，from/to 映射到新 item id，路线原样搬运（不调高德）
+        List<PlanLeg> legs = planLegMapper.selectList(
+                new LambdaQueryWrapper<PlanLeg>().eq(PlanLeg::getPlanId, id));
+        for (PlanLeg leg : legs) {
+            leg.setId(null);
+            leg.setPlanId(copy.getId());
+            leg.setFromItemId(idMap.get(leg.getFromItemId()));
+            leg.setToItemId(idMap.get(leg.getToItemId()));
+            leg.setCreatedAt(LocalDateTime.now());
+            planLegMapper.insert(leg);
+        }
+        return copy;
     }
 
     @Override
-    public Plan copyPlan(Long id) {
-        Plan source = planMapper.selectById(id);
-        if (source == null) {
+    public PlanRole getRole(Long planId, Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        Plan plan = planMapper.selectById(planId);
+        if (plan == null) {
             throw new BusinessException(404, "规划不存在");
         }
-        // 仅公开规划可被复制；私有（含他人或未登录）一律 404，不暴露其存在
-        if (!source.getIsPublic()) {
-            throw new BusinessException(404, "该规划不公开");
+        if (plan.getUserId().equals(userId)) {
+            return PlanRole.OWNER;
         }
-        Plan copy = new Plan();
-        BeanUtil.copyProperties(source, copy);
-        copy.setId(null);                       // 重新自增
-        copy.setUserId(BaseContext.getCurrentId()); // 归属写当前登录用户
-        copy.setIsPublic(true);
-        copy.setCreatedAt(java.time.LocalDateTime.now());
-        planMapper.insert(copy);
-        return copy;
+        PlanCollaborator c = planCollaboratorMapper.selectOne(
+                new LambdaQueryWrapper<PlanCollaborator>()
+                        .eq(PlanCollaborator::getPlanId, planId)
+                        .eq(PlanCollaborator::getUserId, userId));
+        if (c == null) {
+            return null;
+        }
+        return "viewer".equals(c.getRole()) ? PlanRole.VIEWER : PlanRole.EDITOR;
+    }
+
+
+    @Override
+    public void setCover(Long id, String imageUrl) {
+        requireOwner(id);
+        Plan plan = planMapper.selectById(id);
+        plan.setImage(imageUrl);
+        int rows = planMapper.updateById(plan);
+        if (rows <= 0) {
+            throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
+        }
+    }
+
+    @Override
+    public PlanItem addItem(Long planId, PlanItemDTO dto) {
+        Plan plan = requireEditor(planId);
+        PlanItem planItem = new PlanItem();
+        BeanUtil.copyProperties(dto, planItem);
+        planItem.setPlanId(planId);
+        planItem.setCreatedAt(LocalDateTime.now());
+        planItemMapper.insert(planItem);
+        int rows = planMapper.updateById(plan);
+        if (rows <= 0) {
+            throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
+        }
+        broadcast(planId, "item_add", "itemId", planItem.getId());
+        return planItem;
+    }
+
+    @Override
+    public PlanItem updateItem(Long planId, Long itemId, PlanItemDTO dto) {
+        Plan plan = requireEditor(planId);
+        PlanItem planItem = planItemMapper.selectById(itemId);
+        if(planItem == null){
+            throw new BusinessException(404, "计划项不存在");
+        }
+        if(planItem.getPlanId().equals(planId)){
+            BeanUtil.copyProperties(dto, planItem,
+                    CopyOptions.create()
+                            .setIgnoreNullValue(true)
+                            .setIgnoreProperties("id","planId","createdAt"));
+            int rows = planMapper.updateById(plan);
+            if (rows <= 0) {
+                throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
+            }
+            broadcast(planId, "item_update", "itemId", itemId);
+            return planItem;
+        }
+        else{
+            throw new BusinessException(404, "条目不存在或不匹配");
+        }
+    }
+
+    @Override
+    public void deleteItem(Long planId, Long itemId) {
+        Plan plan = requireEditor(planId);
+        planItemMapper.deleteById(itemId);
+        int rows = planMapper.updateById(plan);
+        if (rows <= 0) {
+            throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
+        }
+        broadcast(planId, "item_delete", "itemId", itemId);
+    }
+
+    @Transactional
+    @Override
+    public void reorderItems(Long planId, ReorderDTO dto) {
+       requireEditor(planId);
+        int cas = planMapper.update(null, new LambdaUpdateWrapper<Plan>()
+                .eq(Plan::getId, planId)
+                .eq(Plan::getVersion, dto.getVersion())
+                .set(Plan::getVersion, dto.getVersion() + 1));
+        if (cas == 0) {
+            throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
+        }
+        List<PlanItem> dayItemList = planItemMapper.selectList(new LambdaQueryWrapper<PlanItem>()
+                .eq(PlanItem::getPlanId, planId));
+        Map<Long, PlanItem> itemMap = dayItemList.stream()
+                .collect(Collectors.toMap(PlanItem::getId, p -> p, (k1, k2) -> k1));
+
+        // 遍历所有天，逐条 set dayNo + sortNo
+        for (DayOrderDTO day : dto.getDays()) {
+            for (int i = 0; i < day.getItemIds().size(); i++) {
+                PlanItem item = itemMap.get(day.getItemIds().get(i));
+                if (item == null) throw new BusinessException(400, "计划项不存在");
+                item.setDayNo(day.getDayNo());
+                item.setSortNo(i);
+                planItemMapper.updateById(item);
+            }
+        }
+        //
+        // 未出现在任何 itemIds 里的条目 → dayNo 置 null（防御，正常前端传全量不会触发）
+        Set<Long> mentioned = dto.getDays().stream()
+                .flatMap(d -> d.getItemIds().stream())
+                .collect(Collectors.toSet());
+        for (PlanItem item : dayItemList) {
+            if (!mentioned.contains(item.getId())) {
+                item.setDayNo(null);
+                item.setSortNo(null);
+                planItemMapper.updateById(item);
+            }
+        }
+        planLegMapper.delete(new LambdaQueryWrapper<PlanLeg>()
+                .eq(PlanLeg::getPlanId, planId));
+        broadcast(planId, "reorder");
+    }
+
+    @Override
+    public PlanLeg saveLeg(Long planId, PlanLegDTO dto) {
+        Plan plan = requireEditor(planId);
+        PlanLeg planLeg = new PlanLeg();
+        BeanUtil.copyProperties(dto, planLeg);
+        planLeg.setPlanId(planId);
+        planLegMapper.insert(planLeg);
+        int rows = planMapper.updateById(plan);
+        if (rows <= 0) {
+            throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
+        }
+        broadcast(planId, "leg_save");
+        return planLeg;
+    }
+
+    @Override
+    public void setCollabLocked(Long id, Boolean locked) {
+        Plan plan = requireOwner(id);
+        plan.setCollabLocked(locked);
+        planMapper.updateById(plan);
+        broadcast(id, "lock", "locked", locked, "reason", "owner");
+    }
+
+    @Override
+    public void setCollabDeadline(Long id, LocalDateTime deadline) {
+        Plan plan = requireOwner(id);
+        plan.setCollabDeadline(deadline);
+        planMapper.updateById(plan);
+        broadcast(id, "deadline", "deadline", deadline);
+    }
+
+    @Override
+    public void removeCollaborator(Long planId, Long userId) {
+        requireOwner(planId);
+        if(userId.equals(BaseContext.getCurrentId())){
+            throw new BusinessException(400, "不能移除自己");
+        }
+        PlanCollaborator collaborator = planCollaboratorMapper.selectOne(new LambdaQueryWrapper<PlanCollaborator>()
+                .eq(PlanCollaborator::getPlanId, planId)
+                .eq(PlanCollaborator::getUserId, userId));
+        if (collaborator == null) {
+            throw new BusinessException(404, "协作人不存在");
+        }
+        planCollaboratorMapper.deleteById(collaborator);
+        broadcast(planId, "collaborator_remove", "userId", userId);
+    }
+
+    @Override
+    public Plan requireEditor(Long planId) {
+        Plan plan = planMapper.selectById(planId);
+        if (plan == null) {
+            throw new BusinessException(404, "规划不存在");
+        }
+        PlanRole role = getRole(planId, BaseContext.getCurrentId());
+        if (role != PlanRole.OWNER && role != PlanRole.EDITOR) {
+            throw new BusinessException(403, "无权限操作");
+        }
+        if (role == PlanRole.EDITOR && isCollabLocked(plan)) {
+            throw new BusinessException(403, "计划已锁定或已到截止时间，暂不可编辑");
+        }
+        return plan;
+}
+
+    @Override
+    public Plan requireOwner(Long planId) {
+        Plan plan = planMapper.selectById(planId);
+        if (plan == null) {
+            throw new BusinessException(404, "规划不存在");
+        }
+        PlanRole role = getRole(planId, BaseContext.getCurrentId());
+        if (role != PlanRole.OWNER) {
+            throw new BusinessException(403, "无权限操作");
+        }
+        return plan;
+    }
+    private boolean isCollabLocked(Plan plan) {
+        return Boolean.TRUE.equals(plan.getCollabLocked())
+                || (plan.getCollabDeadline() != null
+                && LocalDateTime.now().isAfter(plan.getCollabDeadline()));
+    }
+
+    /** 广播计划变更事件给所有订阅者（kv 成对传入业务字段，如 "itemId", 3L） */
+    private void broadcast(Long planId, String type, Object... kv) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", type);
+        event.put("planId", planId);
+        event.put("actorId", BaseContext.getCurrentId());
+        for (int i = 0; i < kv.length; i += 2) {
+            event.put((String) kv[i], kv[i + 1]);
+        }
+        messagingTemplate.convertAndSend("/topic/plan/" + planId, (Object) event);
     }
 }

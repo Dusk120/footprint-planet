@@ -6,8 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -27,8 +25,4 @@ public class PlanDTO {
     private LocalDate startDate;
 
     private Boolean isPublic;
-
-    private List<Map<String, Object>> days;
-
-    private List<Map<String, Object>> waypoints;
 }

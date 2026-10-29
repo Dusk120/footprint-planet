@@ -102,48 +102,97 @@ INSERT INTO visited_city (id, user_id, city_name, province, adcode, lat, lng, co
 -- 3. plan（旅游规划）
 -- ------------------------------------------------------------
 CREATE TABLE plan (
-  id         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '规划ID',
-  user_id    BIGINT       NOT NULL COMMENT '所属用户',
-  name       VARCHAR(100) NOT NULL COMMENT '规划名称',
-  destination VARCHAR(100) NOT NULL COMMENT '目的地',
-  location   VARCHAR(100) DEFAULT NULL COMMENT '所在省/国家',
-  image      VARCHAR(255) DEFAULT NULL COMMENT '封面图（可空）',
-  start_date DATE         DEFAULT NULL COMMENT '出发日期',
-  days       JSON         DEFAULT NULL COMMENT '每日行程数组',
-  waypoints  JSON         DEFAULT NULL COMMENT '途径点数组',
-  is_public  TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '是否公开分享（1 公开 / 0 私有）',
-  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  id              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '规划ID',
+  user_id         BIGINT       NOT NULL COMMENT '所属用户（owner）',
+  name            VARCHAR(100) NOT NULL COMMENT '规划名称',
+  destination     VARCHAR(100) NOT NULL COMMENT '目的地',
+  location        VARCHAR(100) DEFAULT NULL COMMENT '所在省/国家',
+  image           VARCHAR(255) DEFAULT NULL COMMENT '封面图（可空）',
+  start_date      DATE         DEFAULT NULL COMMENT '出发日期',
+  is_public       TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '是否公开分享（1 公开 / 0 私有）',
+  version         INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（写操作 +1）',
+  collab_locked   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '协作锁定（1 锁定 / 0 未锁定）',
+  collab_deadline DATETIME     DEFAULT NULL COMMENT '创作截止时间（可空 = 不限时）',
+  created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (id),
   KEY idx_user (user_id),
   CONSTRAINT fk_plan_user FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='旅游规划';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='旅游规划（地图驱动行程 + 多人协同）';
 
-INSERT INTO plan (id, user_id, name, destination, location, image, start_date, days, waypoints, is_public, created_at) VALUES
-(1, 2, '敦煌三日游',  '敦煌莫高窟', '甘肃省', NULL, '2026-10-01',
- JSON_ARRAY(
-   JSON_OBJECT('title','第一天','items',JSON_ARRAY(JSON_OBJECT('time','09:00','place','莫高窟','note','提前预约门票'))),
-   JSON_OBJECT('title','第二天','items',JSON_ARRAY(JSON_OBJECT('time','08:00','place','鸣沙山月牙泉','note',''),JSON_OBJECT('time','16:00','place','沙洲夜市','note','尝尝驴肉黄面')))
- ),
- JSON_ARRAY(JSON_OBJECT('name','兰州','note','高铁中转')),
- 1, '2026-08-10 10:00:00'),
+-- ------------------------------------------------------------
+-- 3.1 plan_item（行程地点条目，取代原 days/waypoints JSON 大字段）
+-- ------------------------------------------------------------
+CREATE TABLE plan_item (
+  id         BIGINT        NOT NULL AUTO_INCREMENT COMMENT '条目ID',
+  plan_id    BIGINT        NOT NULL COMMENT '所属计划',
+  day_no     INT           NOT NULL DEFAULT 1 COMMENT '第几天（从 1 开始）',
+  sort_no    INT           NOT NULL DEFAULT 0 COMMENT '当天顺序',
+  name       VARCHAR(100)  NOT NULL COMMENT '地点名称（高德 POI 正规名称）',
+  lng        DECIMAL(10,6) DEFAULT NULL COMMENT '经度（GCJ-02）',
+  lat        DECIMAL(10,6) DEFAULT NULL COMMENT '纬度（GCJ-02）',
+  poi_id     VARCHAR(64)   DEFAULT NULL COMMENT '高德 POI ID（预留 AI 助手地点校准）',
+  note       VARCHAR(500)  DEFAULT NULL COMMENT '用户备注',
+  created_at DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (id),
+  KEY idx_plan_day_sort (plan_id, day_no, sort_no),
+  CONSTRAINT fk_plan_item_plan FOREIGN KEY (plan_id) REFERENCES plan (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='行程地点条目';
 
-(2, 2, '云南双人游',  '昆明-丽江-大理', '云南省', NULL, '2026-09-15',
- JSON_ARRAY(
-   JSON_OBJECT('title','第一天','items',JSON_ARRAY(JSON_OBJECT('time','10:00','place','滇池','note','喂海鸥'))),
-   JSON_OBJECT('title','第二天','items',JSON_ARRAY(JSON_OBJECT('time','09:00','place','洱海环湖','note','租电瓶车')))
- ),
- JSON_ARRAY(JSON_OBJECT('name','昆明','note','抵达后住一晚')),
- 1, '2026-08-12 11:00:00'),
+-- ------------------------------------------------------------
+-- 3.2 plan_leg（相邻条目交通段，路线存档）
+-- ------------------------------------------------------------
+CREATE TABLE plan_leg (
+  id           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '交通段ID',
+  plan_id      BIGINT       NOT NULL COMMENT '所属计划',
+  from_item_id BIGINT       NOT NULL COMMENT '起点条目',
+  to_item_id   BIGINT       NOT NULL COMMENT '终点条目',
+  mode         VARCHAR(20)  NOT NULL COMMENT '交通方式：driving/walking/riding/transit',
+  duration     INT          DEFAULT NULL COMMENT '时长（秒）',
+  distance     INT          DEFAULT NULL COMMENT '距离（米）',
+  summary      VARCHAR(255) DEFAULT NULL COMMENT '方案摘要（如"地铁2号线→10号线，52分钟"）',
+  polyline     TEXT         DEFAULT NULL COMMENT '简化路线坐标串（画线用，压缩存储）',
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (id),
+  KEY idx_leg_plan (plan_id),
+  CONSTRAINT fk_leg_plan FOREIGN KEY (plan_id) REFERENCES plan (id) ON DELETE CASCADE,
+  CONSTRAINT fk_leg_from_item FOREIGN KEY (from_item_id) REFERENCES plan_item (id) ON DELETE CASCADE,
+  CONSTRAINT fk_leg_to_item FOREIGN KEY (to_item_id) REFERENCES plan_item (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='相邻条目交通段（路线存档）';
 
-(3, 2, '迪士尼一日',  '上海迪士尼', '上海市', NULL, '2026-11-02',
- JSON_ARRAY(JSON_OBJECT('title','第一天','items',JSON_ARRAY(JSON_OBJECT('time','08:30','place','城堡','note','早点去排队')))),
- JSON_ARRAY(),
- 0, '2026-08-14 09:30:00'),
+-- ------------------------------------------------------------
+-- 3.3 plan_collaborator（计划协作者）
+-- ------------------------------------------------------------
+CREATE TABLE plan_collaborator (
+  id        BIGINT      NOT NULL AUTO_INCREMENT COMMENT '关系ID',
+  plan_id   BIGINT      NOT NULL COMMENT '计划',
+  user_id   BIGINT      NOT NULL COMMENT '用户',
+  role      VARCHAR(20) NOT NULL DEFAULT 'editor' COMMENT '角色：editor / viewer（owner 由 plan.user_id 判定）',
+  joined_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_plan_user (plan_id, user_id),
+  CONSTRAINT fk_collab_plan FOREIGN KEY (plan_id) REFERENCES plan (id) ON DELETE CASCADE,
+  CONSTRAINT fk_collab_user FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计划协作者（人 ↔ 计划 ↔ 角色）';
 
-(4, 3, '三亚度假',    '三亚亚龙湾', '海南省', NULL, '2026-09-01',
- JSON_ARRAY(JSON_OBJECT('title','第一天','items',JSON_ARRAY(JSON_OBJECT('time','15:00','place','亚龙湾海滩','note','')))),
- JSON_ARRAY(JSON_OBJECT('name','海口','note','机场中转')),
- 1, '2026-08-16 16:00:00');
+-- ------------------------------------------------------------
+-- 3.4 plan_invite（计划邀请链接）
+-- ------------------------------------------------------------
+CREATE TABLE plan_invite (
+  id         BIGINT      NOT NULL AUTO_INCREMENT COMMENT '邀请ID',
+  token      VARCHAR(64) NOT NULL COMMENT '随机串（UUID），链接主体',
+  plan_id    BIGINT      NOT NULL COMMENT '目标计划',
+  role       VARCHAR(20) NOT NULL DEFAULT 'editor' COMMENT '进入后的角色：editor / viewer',
+  expires_at DATETIME    DEFAULT NULL COMMENT '过期时间（可空 = 不过期）',
+  max_uses   INT         NOT NULL DEFAULT 0 COMMENT '次数上限（0 = 不限）',
+  used_count INT         NOT NULL DEFAULT 0 COMMENT '已用次数',
+  created_by BIGINT      NOT NULL COMMENT '邀请人',
+  revoked    TINYINT(1)  NOT NULL DEFAULT 0 COMMENT '是否已撤销',
+  created_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_token (token),
+  KEY idx_invite_plan (plan_id),
+  CONSTRAINT fk_invite_plan FOREIGN KEY (plan_id) REFERENCES plan (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计划邀请链接';
 
 -- ------------------------------------------------------------
 -- 4. note（社区笔记）

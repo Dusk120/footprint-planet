@@ -37,3 +37,8 @@ jwt:
   ttl: ${footprint.jwt.ttl}
   # 设置前端传递过来的令牌名称
   token-name: ${footprint.jwt.token-name}
+
+# ===== 应用配置 =====
+app:
+  # 前端地址（拼邀请链接 link 用），真实值在 application-dev.yml 的 footprint.frontend-url
+  frontend-url: ${footprint.frontend-url}
