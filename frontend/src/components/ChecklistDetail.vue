@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed } from 'vue'
 
 const emit = defineEmits(['edit', 'delete', 'back', 'use'])
 
@@ -11,15 +11,22 @@ const props = defineProps({
   useAction: { type: Boolean, default: false }
 })
 
-const expandedDays = ref(new Set(props.item.days?.map((_, i) => i) || []))
-
-function toggleDay(i) {
-  if (expandedDays.value.has(i)) {
-    expandedDays.value.delete(i)
-  } else {
-    expandedDays.value.add(i)
-  }
-}
+// 按天分组行程条目（PlanItem：dayNo、sortNo、name、note）
+const groupedDays = computed(() => {
+  const items = props.item.items || []
+  const map = {}
+  items.forEach(it => {
+    const d = it.dayNo ?? 0
+    ;(map[d] = map[d] || []).push(it)
+  })
+  return Object.keys(map)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map(dayNo => ({
+      dayNo,
+      items: (map[dayNo] || []).sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0))
+    }))
+})
 
 function formatDate(d) {
   if (!d) return '未设定'
@@ -62,45 +69,30 @@ function formatDate(d) {
         <span class="meta-tag">📍 {{ item.destination }}</span>
         <span v-if="item.location" class="meta-tag">{{ item.location }}</span>
         <span class="meta-tag">📅 {{ formatDate(item.startDate) }}</span>
-        <span class="meta-tag">{{ item.days?.length || 0 }} 天行程</span>
-      </div>
-    </div>
-
-    <!-- 途径点 -->
-    <div v-if="item.waypoints?.length" class="section">
-      <h3 class="section-title">途径点 / 中转站</h3>
-      <div class="wp-list">
-        <div v-for="(wp, i) in item.waypoints" :key="i" class="wp-item">
-          <span class="wp-dot">📍</span>
-          <div class="wp-info">
-            <span class="wp-name">{{ wp.name }}</span>
-            <span v-if="wp.note" class="wp-note">{{ wp.note }}</span>
-          </div>
-        </div>
+        <span class="meta-tag">{{ groupedDays.length }} 天行程</span>
       </div>
     </div>
 
     <!-- 每日行程 -->
     <div class="section">
       <h3 class="section-title">每日行程</h3>
-      <div v-if="!item.days?.length" class="empty-hint">暂未规划行程</div>
-      <div v-for="(day, di) in item.days" :key="di" class="day-block">
-        <button class="day-header" @click="toggleDay(di)">
+      <div v-if="!groupedDays.length" class="empty-hint">暂未规划行程</div>
+      <div v-for="day in groupedDays" :key="day.dayNo" class="day-block">
+        <div class="day-header">
           <div class="day-left">
-            <span class="day-num">{{ di + 1 }}</span>
-            <span class="day-title">{{ day.title }}</span>
-            <span class="day-count">{{ day.items.length }} 个行程</span>
+            <span class="day-num">{{ day.dayNo }}</span>
+            <span class="day-title">第 {{ day.dayNo }} 天</span>
+            <span class="day-count">{{ day.items.length }} 个地点</span>
           </div>
-          <svg class="day-arrow" :class="{ open: expandedDays.has(di) }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
+        </div>
 
-        <div v-show="expandedDays.has(di)" class="day-items">
-          <div v-for="(item, ii) in day.items" :key="ii" class="timeline-item">
-            <div class="tl-time">{{ item.time || '--:--' }}</div>
+        <div class="day-items">
+          <div v-for="(it, ii) in day.items" :key="it.id" class="timeline-item">
+            <div class="tl-time">{{ ii + 1 }}</div>
             <div class="tl-dot"></div>
             <div class="tl-content">
-              <span class="tl-place">{{ item.place }}</span>
-              <span v-if="item.note" class="tl-note">{{ item.note }}</span>
+              <span class="tl-place">{{ it.name }}</span>
+              <span v-if="it.note" class="tl-note">{{ it.note }}</span>
             </div>
           </div>
         </div>
@@ -178,20 +170,6 @@ function formatDate(d) {
 .section-title { font-size: 16px; font-weight: 700; }
 .empty-hint { color: var(--text-muted); font-size: 14px; padding: 12px 0; }
 
-.wp-list { display: flex; flex-direction: column; gap: 8px; }
-.wp-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  background: rgba(var(--overlay-rgb), 0.04);
-}
-.wp-dot { font-size: 16px; }
-.wp-info { display: flex; flex-direction: column; }
-.wp-name { font-size: 14px; font-weight: 600; }
-.wp-note { font-size: 12px; color: var(--text-muted); }
-
 .day-block {
   border-radius: var(--radius-sm);
   background: rgba(var(--overlay-rgb), 0.03);
@@ -228,9 +206,6 @@ function formatDate(d) {
 
 .day-title { font-size: 15px; font-weight: 700; }
 .day-count { font-size: 12px; color: var(--text-muted); }
-
-.day-arrow { transition: transform 0.2s; color: var(--text-muted); }
-.day-arrow.open { transform: rotate(180deg); }
 
 .day-items {
   padding: 0 16px 14px;

@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { uploadApi } from '../api'
+import { useToast } from '../composables/useToast'
 
 const emit = defineEmits(['confirm', 'cancel'])
+const { show: toast } = useToast()
 
 const props = defineProps({
   editData: { type: Object, default: null }
@@ -11,59 +14,44 @@ const name = ref(props.editData?.name || '')
 const destination = ref(props.editData?.destination || '')
 const location = ref(props.editData?.location || '')
 const startDate = ref(props.editData?.startDate || '')
+const image = ref(props.editData?.image || '')
 // 是否公开：新建默认公开（后端缺省也是 true）；编辑回显原状态
 const isPublic = ref(props.editData?.isPublic ?? true)
 
-const days = ref(
-  props.editData?.days?.length
-    ? props.editData.days.map(d => ({
-        title: d.title,
-        items: d.items.map(it => ({ ...it }))
-      }))
-    : [{ title: '第一天', items: [{ time: '', place: '', note: '' }] }]
-)
-
-const waypoints = ref(
-  props.editData?.waypoints?.map(w => ({ ...w })) || []
-)
-
-const newWaypointName = ref('')
-const newWaypointNote = ref('')
-
-function addDay() {
-  days.value.push({
-    title: `第${days.value.length + 1}天`,
-    items: [{ time: '', place: '', note: '' }]
-  })
-}
-
-function removeDay(i) {
-  if (days.value.length <= 1) return
-  days.value.splice(i, 1)
-  days.value.forEach((d, idx) => { d.title = `第${idx + 1}天` })
-}
-
-function addFormItem(dayIdx) {
-  days.value[dayIdx].items.push({ time: '', place: '', note: '' })
-}
-
-function removeFormItem(dayIdx, itemIdx) {
-  if (days.value[dayIdx].items.length <= 1) return
-  days.value[dayIdx].items.splice(itemIdx, 1)
-}
-
-function addWaypoint() {
-  if (!newWaypointName.value.trim()) return
-  waypoints.value.push({ name: newWaypointName.value.trim(), note: newWaypointNote.value.trim() })
-  newWaypointName.value = ''
-  newWaypointNote.value = ''
-}
-
-function removeWaypoint(i) {
-  waypoints.value.splice(i, 1)
-}
-
 const isValid = computed(() => name.value.trim() && destination.value.trim())
+
+// ---------- 封面上传 ----------
+const coverInput = ref(null)
+const uploading = ref(false)
+const MAX_COVER_SIZE = 10 * 1024 * 1024
+
+function pickCover() {
+  if (uploading.value) return
+  coverInput.value?.click()
+}
+
+async function onCoverChange(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file || uploading.value) return
+  if (!file.type.startsWith('image/')) {
+    toast('请选择图片文件', 'error')
+    return
+  }
+  if (file.size > MAX_COVER_SIZE) {
+    toast('封面不能超过 10MB', 'error')
+    return
+  }
+  uploading.value = true
+  try {
+    const url = await uploadApi.uploadImage(file)
+    image.value = url
+  } catch (err) {
+    toast(err.message || '封面上传失败', 'error')
+  } finally {
+    uploading.value = false
+  }
+}
 
 function handleConfirm() {
   if (!isValid.value) return
@@ -73,8 +61,7 @@ function handleConfirm() {
     location: location.value.trim(),
     startDate: startDate.value,
     isPublic: isPublic.value,
-    days: days.value.filter(d => d.items.some(it => it.place.trim())),
-    waypoints: [...waypoints.value]
+    image: image.value
   })
 }
 </script>
@@ -84,17 +71,16 @@ function handleConfirm() {
     <div class="dialog-overlay" @click.self="emit('cancel')">
       <div class="dialog glass-panel">
         <div class="dialog-header">
-          <span class="dialog-emoji">📋</span>
+          <span class="dialog-emoji">🗺️</span>
           <div class="dialog-title-wrap">
             <h2 class="dialog-title">{{ editData ? '编辑规划' : '新建旅游规划' }}</h2>
-            <span class="dialog-sub">规划你的旅行行程</span>
+            <span class="dialog-sub">先填好基本信息，再去地图上排行程</span>
           </div>
         </div>
 
         <div class="dialog-body">
-          <!-- 基础信息 -->
           <div class="field">
-            <label class="field-label">清单名称 <span class="req">*</span></label>
+            <label class="field-label">规划名称 <span class="req">*</span></label>
             <input v-model="name" class="text-input" placeholder="如「敦煌三日游」" maxlength="30" />
           </div>
 
@@ -114,7 +100,20 @@ function handleConfirm() {
             <input v-model="startDate" type="date" class="text-input" />
           </div>
 
-          <!-- 是否公开 -->
+          <div class="field">
+            <label class="field-label">封面</label>
+            <div class="cover-row">
+              <div class="cover-thumb">
+                <img v-if="image" :src="image" alt="封面预览" />
+                <span v-else class="cover-placeholder">🖼️</span>
+              </div>
+              <button type="button" class="cover-upload-btn" :disabled="uploading" @click="pickCover">
+                {{ uploading ? '上传中…' : (image ? '更换封面' : '上传封面') }}
+              </button>
+              <input ref="coverInput" type="file" accept="image/*" hidden @change="onCoverChange" />
+            </div>
+          </div>
+
           <div class="field public-field">
             <div class="public-row">
               <div class="public-label">
@@ -132,54 +131,12 @@ function handleConfirm() {
               </button>
             </div>
           </div>
-
-          <!-- 每日行程 -->
-          <div class="section-divider">
-            <span class="divider-label">每日行程</span>
-          </div>
-
-          <div v-for="(day, di) in days" :key="di" class="day-block">
-            <div class="day-header">
-              <span class="day-title">{{ day.title }}</span>
-              <button v-if="days.length > 1" class="day-remove" @click="removeDay(di)">删除这一天</button>
-            </div>
-
-            <div v-for="(item, ii) in day.items" :key="ii" class="form-item">
-              <div class="item-fields">
-                <input v-model="item.time" class="text-input time-input" type="time" placeholder="时间" />
-                <input v-model="item.place" class="text-input flex-1" placeholder="地点" />
-                <input v-model="item.note" class="text-input flex-1" placeholder="备注（选填）" />
-              </div>
-              <button v-if="day.items.length > 1" class="item-remove" @click="removeFormItem(di, ii)">×</button>
-            </div>
-
-            <button class="add-item-btn" @click="addFormItem(di)">＋ 添加行程</button>
-          </div>
-
-          <button class="add-day-btn" @click="addDay">＋ 添加新的一天</button>
-
-          <!-- 途径点 -->
-          <div class="section-divider">
-            <span class="divider-label">途径点 / 中转站</span>
-          </div>
-
-          <div v-for="(wp, wi) in waypoints" :key="wi" class="waypoint-tag">
-            <span class="wp-name">📍 {{ wp.name }}</span>
-            <span v-if="wp.note" class="wp-note">{{ wp.note }}</span>
-            <button class="wp-remove" @click="removeWaypoint(wi)">×</button>
-          </div>
-
-          <div class="waypoint-add">
-            <input v-model="newWaypointName" class="text-input wp-input" placeholder="途径点名称" />
-            <input v-model="newWaypointNote" class="text-input wp-input" placeholder="备注（选填）" />
-            <button class="wp-add-btn" @click="addWaypoint">添加</button>
-          </div>
         </div>
 
         <div class="dialog-footer">
           <button class="btn-cancel" @click="emit('cancel')">取消</button>
           <button class="btn-confirm" :disabled="!isValid" @click="handleConfirm">
-            {{ editData ? '保存修改' : '创建清单' }}
+            {{ editData ? '保存修改' : '创建规划' }}
           </button>
         </div>
       </div>
@@ -188,133 +145,48 @@ function handleConfirm() {
 </template>
 
 <style scoped>
-.dialog { width: 580px; }
+.dialog { width: 520px; }
 
 .field-row { display: flex; gap: 12px; }
 .flex-1 { flex: 1; }
 
-.day-block {
-  background: var(--dialog-day-bg);
-  border: 1px solid var(--dialog-day-border);
+.cover-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cover-thumb {
+  width: 96px;
+  height: 64px;
   border-radius: var(--radius-sm);
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.day-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.day-title { font-size: 14px; font-weight: 700; color: var(--accent-primary); }
-
-.day-remove {
-  font-size: 12px;
-  color: var(--danger);
-  background: none;
-  padding: 4px 8px;
-  border-radius: var(--radius-xs);
-  transition: var(--transition);
-}
-.day-remove:hover { background: rgba(248, 113, 113, 0.15); }
-
-.form-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.item-fields {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-}
-
-.time-input { width: 110px; flex-shrink: 0; }
-
-.item-remove {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--dialog-item-bg);
-  color: var(--text-muted);
-  font-size: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--overlay-rgb), 0.15);
+  background: rgba(var(--overlay-rgb), 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: var(--transition);
 }
-.item-remove:hover { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
-
-.add-item-btn {
-  align-self: flex-start;
-  font-size: 13px;
-  color: var(--accent-primary);
-  background: none;
-  padding: 4px 0;
-  transition: var(--transition);
+.cover-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.add-item-btn:hover { opacity: 0.8; }
-
-.add-day-btn {
-  align-self: flex-start;
+.cover-placeholder {
+  font-size: 26px;
+  opacity: 0.8;
+}
+.cover-upload-btn {
   padding: 8px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(var(--accent-rgb), 0.12);
-  border: 1px dashed rgba(var(--accent-rgb), 0.4);
-  color: var(--accent-primary);
+  background: rgba(var(--overlay-rgb), 0.06);
+  border: 1px solid var(--bg-glass-border);
   font-size: 13px;
-  font-weight: 600;
+  cursor: pointer;
   transition: var(--transition);
 }
-.add-day-btn:hover { background: rgba(var(--accent-rgb), 0.2); }
-
-.waypoint-tag {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: var(--radius-pill);
-  background: rgba(var(--accent-rgb), 0.1);
-  border: 1px solid rgba(var(--accent-rgb), 0.25);
-  font-size: 13px;
-}
-.wp-name { font-weight: 600; color: var(--accent-primary); }
-.wp-note { color: var(--text-muted); font-size: 12px; }
-.wp-remove {
-  margin-left: auto;
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: var(--dialog-cancel-bg);
-  color: var(--text-muted);
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.wp-remove:hover { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
-
-.waypoint-add {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.wp-input { flex: 1; padding: 8px 12px; font-size: 13px; }
-.wp-add-btn {
-  padding: 8px 16px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-gradient);
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: var(--transition);
-}
-.wp-add-btn:hover { opacity: 0.9; }
+.cover-upload-btn:hover { background: rgba(var(--overlay-rgb), 0.12); }
+.cover-upload-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .public-row {
   display: flex;

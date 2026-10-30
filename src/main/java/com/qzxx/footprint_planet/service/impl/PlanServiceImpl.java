@@ -4,7 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.common.PlanRole;
@@ -54,10 +54,7 @@ public class PlanServiceImpl implements PlanService {
     public PageVO<Plan> getPlans(Integer page, Integer pageSize) {
         Long userId = BaseContext.getCurrentId();
         Page<Plan> p = new Page<>(page, pageSize);
-        p.addOrder(OrderItem.desc("created_at"));
-        Page<Plan> result=planMapper.selectPage(p,
-                new LambdaQueryWrapper<Plan>()
-                        .eq(Plan::getUserId, userId));
+        IPage<Plan> result = planMapper.selectMyPlans(p, userId);
         return new PageVO<>(result.getRecords(), result.getTotal(), result.getCurrent(), result.getSize());
     }
 
@@ -155,7 +152,7 @@ public class PlanServiceImpl implements PlanService {
         if (rows <= 0) {
             throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
         }
-        broadcast(id, "plan_update");
+        broadcastEvent(id, "plan_update");
         return plan;
     }
 
@@ -163,7 +160,7 @@ public class PlanServiceImpl implements PlanService {
     public void deletePlan(Long id) {
        requireOwner(id);
         planMapper.deleteById(id);
-        broadcast(id, "plan_delete");
+        broadcastEvent(id, "plan_delete");
     }
 
     @Transactional
@@ -247,16 +244,24 @@ public class PlanServiceImpl implements PlanService {
     @Override
     public PlanItem addItem(Long planId, PlanItemDTO dto) {
         Plan plan = requireEditor(planId);
+        // 忽略前端传的 sortNo，改为追加到该天末尾：dayNo 为空默认第 1 天，
+        // 新条目 sortNo = 该天现有条目数（0、1、2… 依次追加）
+        Integer dayNo = dto.getDayNo() == null ? 1 : dto.getDayNo();
+        Long count = planItemMapper.selectCount(new LambdaQueryWrapper<PlanItem>()
+                .eq(PlanItem::getPlanId, planId)
+                .eq(PlanItem::getDayNo, dayNo));
         PlanItem planItem = new PlanItem();
         BeanUtil.copyProperties(dto, planItem);
         planItem.setPlanId(planId);
+        planItem.setDayNo(dayNo);
+        planItem.setSortNo(count.intValue());
         planItem.setCreatedAt(LocalDateTime.now());
         planItemMapper.insert(planItem);
         int rows = planMapper.updateById(plan);
         if (rows <= 0) {
             throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
         }
-        broadcast(planId, "item_add", "itemId", planItem.getId());
+        broadcastEvent(planId, "item_add", "itemId", planItem.getId(), "itemName", planItem.getName());
         return planItem;
     }
 
@@ -276,7 +281,7 @@ public class PlanServiceImpl implements PlanService {
             if (rows <= 0) {
                 throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
             }
-            broadcast(planId, "item_update", "itemId", itemId);
+            broadcastEvent(planId, "item_update", "itemId", itemId, "itemName", planItem.getName());
             return planItem;
         }
         else{
@@ -287,12 +292,15 @@ public class PlanServiceImpl implements PlanService {
     @Override
     public void deleteItem(Long planId, Long itemId) {
         Plan plan = requireEditor(planId);
+        // 删除前先取名称，供动态流展示「谁删除了哪个景点」
+        PlanItem target = planItemMapper.selectById(itemId);
+        String itemName = target != null ? target.getName() : null;
         planItemMapper.deleteById(itemId);
         int rows = planMapper.updateById(plan);
         if (rows <= 0) {
             throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
         }
-        broadcast(planId, "item_delete", "itemId", itemId);
+        broadcastEvent(planId, "item_delete", "itemId", itemId, "itemName", itemName);
     }
 
     @Transactional
@@ -335,12 +343,17 @@ public class PlanServiceImpl implements PlanService {
         }
         planLegMapper.delete(new LambdaQueryWrapper<PlanLeg>()
                 .eq(PlanLeg::getPlanId, planId));
-        broadcast(planId, "reorder");
+        broadcastEvent(planId, "reorder");
     }
 
     @Override
     public PlanLeg saveLeg(Long planId, PlanLegDTO dto) {
         Plan plan = requireEditor(planId);
+        // 覆盖式保存：一个起点（from_item_id）只对应一条交通段。
+        // 先删掉同起点的旧 leg 再插入，避免「修改出行方案」时堆积重复记录
+        planLegMapper.delete(new LambdaQueryWrapper<PlanLeg>()
+                .eq(PlanLeg::getPlanId, planId)
+                .eq(PlanLeg::getFromItemId, dto.getFromItemId()));
         PlanLeg planLeg = new PlanLeg();
         BeanUtil.copyProperties(dto, planLeg);
         planLeg.setPlanId(planId);
@@ -349,7 +362,7 @@ public class PlanServiceImpl implements PlanService {
         if (rows <= 0) {
             throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
         }
-        broadcast(planId, "leg_save");
+        broadcastEvent(planId, "leg_save");
         return planLeg;
     }
 
@@ -358,7 +371,7 @@ public class PlanServiceImpl implements PlanService {
         Plan plan = requireOwner(id);
         plan.setCollabLocked(locked);
         planMapper.updateById(plan);
-        broadcast(id, "lock", "locked", locked, "reason", "owner");
+        broadcastEvent(id, "lock", "locked", locked, "reason", "owner");
     }
 
     @Override
@@ -366,7 +379,7 @@ public class PlanServiceImpl implements PlanService {
         Plan plan = requireOwner(id);
         plan.setCollabDeadline(deadline);
         planMapper.updateById(plan);
-        broadcast(id, "deadline", "deadline", deadline);
+        broadcastEvent(id, "deadline", "deadline", deadline);
     }
 
     @Override
@@ -382,7 +395,7 @@ public class PlanServiceImpl implements PlanService {
             throw new BusinessException(404, "协作人不存在");
         }
         planCollaboratorMapper.deleteById(collaborator);
-        broadcast(planId, "collaborator_remove", "userId", userId);
+        broadcastEvent(planId, "collaborator_remove", "userId", userId);
     }
 
     @Override
@@ -420,11 +433,17 @@ public class PlanServiceImpl implements PlanService {
     }
 
     /** 广播计划变更事件给所有订阅者（kv 成对传入业务字段，如 "itemId", 3L） */
-    private void broadcast(Long planId, String type, Object... kv) {
+    @Override
+    public void broadcastEvent(Long planId, String type, Object... kv) {
         Map<String, Object> event = new HashMap<>();
         event.put("type", type);
         event.put("planId", planId);
-        event.put("actorId", BaseContext.getCurrentId());
+        Long actorId = BaseContext.getCurrentId();
+        event.put("actorId", actorId);
+        // 附带操作者昵称，供前端「动态流」直接展示「谁做了什么」
+        User actor = actorId != null ? userMapper.selectById(actorId) : null;
+        event.put("actorName", actor != null ? actor.getNickname() : "未知用户");
+        event.put("timestamp", LocalDateTime.now().toString());
         for (int i = 0; i < kv.length; i += 2) {
             event.put((String) kv[i], kv[i + 1]);
         }

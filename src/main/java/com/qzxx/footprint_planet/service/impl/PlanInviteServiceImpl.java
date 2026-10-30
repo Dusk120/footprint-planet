@@ -6,6 +6,7 @@ import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.common.PlanRole;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.PlanInviteDTO;
+import com.qzxx.footprint_planet.dto.request.PlanInviteUpdateDTO;
 import com.qzxx.footprint_planet.entity.PlanCollaborator;
 import com.qzxx.footprint_planet.entity.PlanInvite;
 import com.qzxx.footprint_planet.mapper.PlanCollaboratorMapper;
@@ -39,7 +40,7 @@ public class PlanInviteServiceImpl implements PlanInviteService {
 
     @Override
     public PlanInviteVO createInvite(Long planId, PlanInviteDTO dto) {
-        planService.requireEditor(planId);
+        planService.requireOwner(planId);
         PlanInvite invite = new PlanInvite();
         invite.setToken(UUID.randomUUID().toString().replace("-", ""));
         invite.setPlanId(planId);
@@ -86,6 +87,8 @@ public class PlanInviteServiceImpl implements PlanInviteService {
         planCollaboratorMapper.insert(c);
         invite.setUsedCount(invite.getUsedCount() + 1);
         planInviteMapper.updateById(invite);
+        // 广播「成员加入」事件（actorId/actorName 由 broadcastEvent 统一取自当前登录用户 = 加入者本人）
+        planService.broadcastEvent(invite.getPlanId(), "member_join", "role", invite.getRole());
         resultVO.setRole(invite.getRole());
         resultVO.setPlanId(invite.getPlanId());
         return resultVO;
@@ -99,6 +102,26 @@ public class PlanInviteServiceImpl implements PlanInviteService {
             throw new BusinessException(404, "邀请不存在");
         invite.setRevoked(true);
         planInviteMapper.updateById(invite);
+    }
+
+    @Override
+    public PlanInviteVO updateInvite(Long planId, Long inviteId, PlanInviteUpdateDTO dto) {
+        planService.requireOwner(planId);
+        PlanInvite invite = planInviteMapper.selectById(inviteId);
+        if (invite == null || !invite.getPlanId().equals(planId))
+            throw new BusinessException(404, "邀请不存在");
+        if (Boolean.TRUE.equals(invite.getRevoked()))
+            throw new BusinessException(400, "邀请已撤销，不能修改");
+        // 次数上限不能小于已使用次数（maxUses=0 表示不限，不校验）
+        if (dto.getMaxUses() != null && dto.getMaxUses() > 0 && dto.getMaxUses() < invite.getUsedCount())
+            throw new BusinessException(400, "次数上限不能小于已使用次数");
+        invite.setRole(dto.getRole());
+        invite.setMaxUses(dto.getMaxUses());
+        invite.setExpiresAt(dto.getExpiresAt());
+        planInviteMapper.updateById(invite);
+        PlanInviteVO vo = BeanUtil.copyProperties(invite, PlanInviteVO.class);
+        vo.setLink(frontendBaseUrl + "/invite/" + invite.getToken());
+        return vo;
     }
 
     @Override

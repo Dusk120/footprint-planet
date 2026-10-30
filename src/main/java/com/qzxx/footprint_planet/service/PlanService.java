@@ -60,4 +60,7 @@ public interface PlanService {
 
     /** 移除协作者成员（仅 owner） */
     void removeCollaborator(Long planId, Long userId);
+
+    /** 广播计划事件给所有订阅者（type + kv 成对业务字段），供协作模块复用 */
+    void broadcastEvent(Long planId, String type, Object... kv);
 }

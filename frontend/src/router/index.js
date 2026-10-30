@@ -13,6 +13,12 @@ const routes = [
     meta: { guest: true }
   },
   {
+    path: '/invite/:token',
+    name: 'invite-accept',
+    component: () => import('../views/InvitePage.vue'),
+    meta: { title: '接受邀请', requireAuth: true }
+  },
+  {
     path: '/',
     component: AppLayout,
     children: [
@@ -21,6 +27,7 @@ const routes = [
       { path: 'footprint', name: 'footprint', component: () => import('../views/FootprintPage.vue'), meta: { title: '足迹点亮', requireAuth: true } },
       { path: 'memories', name: 'memories', component: () => import('../views/MemoriesPage.vue'), meta: { title: '旅行回忆', requireAuth: true } },
       { path: 'checklist', name: 'checklist', component: () => import('../views/ChecklistPage.vue'), meta: { title: '旅游规划', requireAuth: true } },
+      { path: 'checklist/:id', name: 'plan-editor', component: () => import('../views/PlanEditorPage.vue'), meta: { title: '规划编辑', requireAuth: true } },
       { path: 'community', name: 'community', component: () => import('../views/CommunityPage.vue'), meta: { title: '旅游社区' } },
       { path: 'feedback', name: 'feedback', component: () => import('../views/FeedbackPage.vue'), meta: { title: '建议与反馈' } },
     ]

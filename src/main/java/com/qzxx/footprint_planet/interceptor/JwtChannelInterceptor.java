@@ -13,6 +13,8 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -27,6 +29,9 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     @Resource
     private JwtProperties jwtProperties;
 
+    // @Lazy 打破 WebSocket 循环依赖：
+    // JwtChannelInterceptor → PlanService → SimpMessagingTemplate → (WebSocket 代理配置) → WebSocketConfig → JwtChannelInterceptor
+    @Lazy
     @Resource
     private PlanService planService;
 

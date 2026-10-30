@@ -2,6 +2,7 @@ package com.qzxx.footprint_planet.controller;
 
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.PlanInviteDTO;
+import com.qzxx.footprint_planet.dto.request.PlanInviteUpdateDTO;
 import com.qzxx.footprint_planet.service.PlanInviteService;
 import com.qzxx.footprint_planet.vo.AcceptResultVO;
 import com.qzxx.footprint_planet.vo.PlanInviteVO;
@@ -32,6 +33,13 @@ public class PlanInviteController {
     public Result<Void> revokeInvite(@PathVariable Long planId, @PathVariable Long inviteId) {
         planInviteService.revokeInvite(planId, inviteId);
         return Result.success();
+    }
+
+    @PutMapping("/api/plans/{planId}/invites/{inviteId}")
+    public Result<PlanInviteVO> updateInvite(@PathVariable Long planId,
+                                             @PathVariable Long inviteId,
+                                             @RequestBody @Valid PlanInviteUpdateDTO dto) {
+        return Result.success(planInviteService.updateInvite(planId, inviteId, dto));
     }
 
     @GetMapping("/api/plans/{planId}/invites")

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useAppStore } from '../stores/app'
 import { useRouter } from 'vue-router'
 import StatCard from '../components/StatCard.vue'
@@ -10,6 +10,7 @@ import NoteDetailPanel from '../components/NoteDetailPanel.vue'
 import AdminConfirmDialog from '../components/admin/AdminConfirmDialog.vue'
 import { useToast } from '../composables/useToast'
 import { formatLikes } from '../utils/format'
+import { planApi } from '../api'
 
 const store = useAppStore()
 const router = useRouter()
@@ -55,6 +56,11 @@ async function loadNotes() {
 // 规划：走后端真分页
 const planList = ref([])
 const planTotal = ref(0)
+// 封面图加载失败回退到首字母
+const planImgError = reactive(new Set())
+function onPlanImgError(id) {
+  planImgError.add(id)
+}
 
 async function loadPlans() {
   try {
@@ -121,8 +127,13 @@ async function handleLikeNote() {
 }
 
 // 旅游规划
-function handlePlanClick(plan) {
-  selectedPlan.value = plan
+async function handlePlanClick(plan) {
+  selectedPlan.value = plan  // 先用列表基本信息，避免空白
+  try {
+    selectedPlan.value = await planApi.detail(plan.id)
+  } catch (e) {
+    toast(e.message || '加载规划详情失败', 'error')
+  }
 }
 
 function handlePlanBack() {
@@ -321,24 +332,19 @@ async function handlePlanDialogConfirm(data) {
           @click="handlePlanClick(plan)"
         >
           <div class="plan-card-top">
-            <span class="plan-emoji">✈️</span>
+            <div class="plan-cover">
+              <img v-if="plan.image && !planImgError.has(plan.id)" :src="plan.image" alt="" @error="onPlanImgError(plan.id)" />
+              <span v-else class="plan-cover-letter">{{ (plan.destination || plan.name || '旅').charAt(0) }}</span>
+            </div>
             <div class="plan-info">
               <h4 class="plan-name">{{ plan.name }}</h4>
               <span class="plan-dest">📍 {{ plan.destination }}</span>
             </div>
+            <span v-if="plan.collaborated" class="plan-collab-tag">👥 协作</span>
           </div>
           <div class="plan-meta">
             <span class="plan-meta-item">📅 {{ plan.startDate || '未设定' }}</span>
-            <span class="plan-meta-item">{{ plan.days?.length || 0 }} 天</span>
-            <span class="plan-meta-item">{{ (plan.days || []).reduce((s, d) => s + (d.items?.length || 0), 0) }} 个行程</span>
-          </div>
-          <div v-if="plan.waypoints?.length" class="plan-waypoints">
-            <span v-for="(wp, i) in plan.waypoints.slice(0, 3)" :key="i" class="plan-wp-pill">
-              📍 {{ wp.name }}
-            </span>
-            <span v-if="plan.waypoints.length > 3" class="plan-wp-pill more">
-              +{{ plan.waypoints.length - 3 }}
-            </span>
+            <span v-if="plan.location" class="plan-meta-item">{{ plan.location }}</span>
           </div>
         </div>
       </div>
@@ -746,16 +752,36 @@ async function handlePlanDialogConfirm(data) {
   margin-bottom: 12px;
 }
 
-.plan-emoji {
-  font-size: 28px;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-xs);
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15), rgba(14, 165, 233, 0.15));
+.plan-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.35), rgba(var(--accent-rgb), 0.12));
+}
+.plan-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.plan-cover-letter {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+.plan-collab-tag {
   flex-shrink: 0;
+  margin-left: auto;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--accent-primary);
+  font-weight: 600;
 }
 
 .plan-info {
@@ -787,21 +813,6 @@ async function handlePlanDialogConfirm(data) {
 .plan-meta-item {
   font-size: 12px;
   color: var(--text-muted);
-}
-
-.plan-waypoints {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.plan-wp-pill {
-  font-size: 11px;
-  padding: 2px 10px;
-  border-radius: var(--radius-pill);
-  background: rgba(var(--accent-rgb), 0.1);
-  border: 1px solid rgba(var(--accent-rgb), 0.25);
-  color: var(--accent-soft);
 }
 
 /* Pagination */

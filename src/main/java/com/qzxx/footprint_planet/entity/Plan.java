@@ -1,6 +1,7 @@
 package com.qzxx.footprint_planet.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
@@ -43,4 +44,8 @@ public class Plan {
     private LocalDateTime collabDeadline;
 
     private LocalDateTime createdAt;
+
+    /** 是否「协作参与」的计划（非 owner 视角），列表查询时填充，非表字段 */
+    @TableField(exist = false)
+    private Boolean collaborated;
 }
