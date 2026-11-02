@@ -125,8 +125,20 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         if (!visitedCity.getUserId().equals(BaseContext.getCurrentId())) {
             throw new BusinessException(403, "无权限修改");
         }
-        // 只覆盖前端实际传了的字段，避免把未传的 light_date 等清空
-        BeanUtil.copyProperties(visitedCityDTO, visitedCity, CopyOptions.create().ignoreNullValue().setIgnoreProperties("cityName"));
+        // 只覆盖前端实际传了的字段，避免把未传的 light_date 等清空。
+        // adcode / city_name / province 三者由 adcode 唯一决定，单独处理，不随 DTO 直接覆盖。
+        BeanUtil.copyProperties(visitedCityDTO, visitedCity, CopyOptions.create()
+                .setIgnoreNullValue(true)
+                .setIgnoreProperties("adcode", "cityName", "province"));
+        if (StringUtils.hasText(visitedCityDTO.getAdcode())) {
+            // 换城市：adcode 必须合法，且 city_name / province 同步按字典重算，保持同源
+            if (!cityDict.contains(visitedCityDTO.getAdcode())) {
+                throw new BusinessException(400, "无效的城市代码");
+            }
+            visitedCity.setAdcode(visitedCityDTO.getAdcode());
+            visitedCity.setCityName(cityDict.name(visitedCityDTO.getAdcode()));
+            visitedCity.setProvince(cityDict.province(visitedCityDTO.getAdcode()));
+        }
         if (visitedCity.getLightDate() == null) {
             visitedCity.setLightDate(LocalDate.now());
         }

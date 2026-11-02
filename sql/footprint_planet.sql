@@ -72,7 +72,7 @@ CREATE TABLE visited_city (
   user_id    BIGINT      NOT NULL COMMENT '所属用户',
   city_name  VARCHAR(50) NOT NULL COMMENT '城市名',
   province   VARCHAR(50) NOT NULL COMMENT '所在省份',
-  adcode     VARCHAR(20) DEFAULT NULL COMMENT '行政区划代码',
+  adcode     VARCHAR(20) NOT NULL COMMENT '行政区划代码',
   lat        DOUBLE      DEFAULT NULL COMMENT '纬度',
   lng        DOUBLE      DEFAULT NULL COMMENT '经度',
   color      VARCHAR(10) DEFAULT NULL COMMENT '点位颜色（地图）',
@@ -80,7 +80,7 @@ CREATE TABLE visited_city (
   records    JSON        DEFAULT NULL COMMENT '游玩回忆数组',
   created_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_user_city (user_id, city_name),
+  UNIQUE KEY uk_user_adcode (user_id, adcode),
   KEY idx_user (user_id),
   CONSTRAINT fk_visited_user FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='点亮城市';

@@ -21,6 +21,7 @@ import com.qzxx.footprint_planet.vo.CommentPageVO;
 import com.qzxx.footprint_planet.vo.CommentVO;
 import com.qzxx.footprint_planet.vo.NoteLikeVO;
 import jakarta.annotation.Resource;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -232,35 +233,42 @@ public class CommentServiceImpl implements CommentService {
         if (!comment.getNoteId().equals(noteId)) {
             throw new BusinessException(404, "评论不属于该笔记");
         }
-        NoteLikeVO noteLikeVO = new NoteLikeVO();
-        noteLikeVO.setLiked(commentLikeDTO.getLike());
-        Long count = commentLikeMapper.selectCount(new LambdaQueryWrapper<CommentLike>()
-                .eq(CommentLike::getCommentId, commentId)
-                .eq(CommentLike::getUserId, userId));
-        if (commentLikeDTO.getLike() && count==0){
-            noteCommentMapper.update(null, new LambdaUpdateWrapper<NoteComment>()
-                    .eq(NoteComment::getId, commentId)
-                    .setSql("likes = likes + 1"));
-            CommentLike commentLike=new CommentLike();
+        boolean liked;
+        if (commentLikeDTO.getLike()) {
+            // 点赞：直接 insert，靠唯一键 (comment_id, user_id) 裁决是否真正新增
+            CommentLike commentLike = new CommentLike();
             commentLike.setUserId(userId);
             commentLike.setCommentId(commentId);
             commentLike.setCreatedAt(LocalDateTime.now());
-            commentLikeMapper.insert(commentLike);
-        } else if (!commentLikeDTO.getLike() && count==1){
-            noteCommentMapper.update(null, new LambdaUpdateWrapper<NoteComment>()
-                    .eq(NoteComment::getId, commentId)
-                    .setSql("likes = likes - 1"));
-            commentLikeMapper.delete(new LambdaQueryWrapper<CommentLike>()
+            try {
+                commentLikeMapper.insert(commentLike);
+                // insert 成功 = 本次真正新增点赞，才自增并通知
+                noteCommentMapper.update(null, new LambdaUpdateWrapper<NoteComment>()
+                        .eq(NoteComment::getId, commentId)
+                        .setSql("likes = likes + 1"));
+                Note note = noteMapper.selectById(noteId);
+                notificationsService.notify(comment.getUserId(), "like_comment", noteId,
+                        note != null ? note.getTitle() : null, "点赞了你的评论");
+                liked = true;
+            } catch (DuplicateKeyException e) {
+                // 已点过赞 → 幂等返回，不 +1、不通知
+                liked = true;
+            }
+        } else {
+            // 取消点赞：用 delete 影响行数判断是否真的删掉，避免并发下 likes 被多减
+            int deleted = commentLikeMapper.delete(new LambdaQueryWrapper<CommentLike>()
                     .eq(CommentLike::getCommentId, commentId)
                     .eq(CommentLike::getUserId, userId));
+            if (deleted > 0) {
+                noteCommentMapper.update(null, new LambdaUpdateWrapper<NoteComment>()
+                        .eq(NoteComment::getId, commentId)
+                        .setSql("likes = GREATEST(likes - 1, 0)"));
+            }
+            liked = false;
         }
+        NoteLikeVO noteLikeVO = new NoteLikeVO();
+        noteLikeVO.setLiked(liked);
         noteLikeVO.setLikes(noteCommentMapper.selectById(commentId).getLikes());
-        // 点赞成功才通知（取消点赞不通知）；notify 内部已排除自己给自己点赞
-        if (commentLikeDTO.getLike() && count == 0) {
-            Note note = noteMapper.selectById(noteId);
-            notificationsService.notify(comment.getUserId(), "like_comment", noteId,
-                    note != null ? note.getTitle() : null, "点赞了你的评论");
-        }
         return noteLikeVO;
     }
 }

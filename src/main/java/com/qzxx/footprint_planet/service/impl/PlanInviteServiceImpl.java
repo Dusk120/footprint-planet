@@ -19,6 +19,7 @@ import com.qzxx.footprint_planet.vo.PlanInviteVO;
 import org.springframework.beans.factory.annotation.Value;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,6 +59,7 @@ public class PlanInviteServiceImpl implements PlanInviteService {
         return vo;
     }
 
+    @Transactional
     @Override
     public AcceptResultVO acceptInvite(String token) {
         PlanInvite invite = planInviteMapper.selectOne(
@@ -67,17 +69,18 @@ public class PlanInviteServiceImpl implements PlanInviteService {
             throw new BusinessException(400, "邀请已撤销");
         if (invite.getExpiresAt() != null && invite.getExpiresAt().isBefore(LocalDateTime.now()))
             throw new BusinessException(400, "邀请已过期");
-        if (invite.getMaxUses() != null && invite.getMaxUses() > 0
-                && invite.getUsedCount() >= invite.getMaxUses())
-            throw new BusinessException(400, "邀请次数已用完");
         Long userId = BaseContext.getCurrentId();
         AcceptResultVO resultVO = new AcceptResultVO();
-        // 已是成员（含 owner）→ 幂等直接返回，不再加、不再 +1
+        // 已是成员（含 owner）→ 幂等直接返回，不消耗次数
         PlanRole existingRole = planService.getRole(invite.getPlanId(), userId);
         if (existingRole != null){
             resultVO.setRole(existingRole.name().toLowerCase());
             resultVO.setPlanId(invite.getPlanId());
             return resultVO;
+        }
+        // 原子占坑：未满额才 +1，检查与自增合一，杜绝并发超限；+1 后若插入协作者失败会随事务回滚
+        if (planInviteMapper.incrementUsedIfAvailable(invite.getId()) == 0) {
+            throw new BusinessException(400, "邀请次数已用完");
         }
         PlanCollaborator c = new PlanCollaborator();
         c.setPlanId(invite.getPlanId());
@@ -85,8 +88,6 @@ public class PlanInviteServiceImpl implements PlanInviteService {
         c.setRole(invite.getRole());
         c.setJoinedAt(LocalDateTime.now());
         planCollaboratorMapper.insert(c);
-        invite.setUsedCount(invite.getUsedCount() + 1);
-        planInviteMapper.updateById(invite);
         // 广播「成员加入」事件（actorId/actorName 由 broadcastEvent 统一取自当前登录用户 = 加入者本人）
         planService.broadcastEvent(invite.getPlanId(), "member_join", "role", invite.getRole());
         resultVO.setRole(invite.getRole());
