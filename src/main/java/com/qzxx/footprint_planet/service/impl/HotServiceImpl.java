@@ -1,5 +1,6 @@
 package com.qzxx.footprint_planet.service.impl;
 
+import com.qzxx.footprint_planet.common.CityDict;
 import com.qzxx.footprint_planet.common.RedisKeys;
 import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.HotService;
@@ -17,6 +18,8 @@ public class HotServiceImpl implements HotService {
     private VisitedCityMapper visitedCityMapper;
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private CityDict cityDict;
 
 
     @Override
@@ -26,6 +29,8 @@ public class HotServiceImpl implements HotService {
             return list.stream().map(HotCityVO.class::cast).toList();
         }
         List<HotCityVO> hotCityVOS = visitedCityMapper.selectHotCities();
+        // 统计按 adcode 分组，这里用字典反查标准城市名（避免「拉萨」vs「拉萨市」拆成两行）
+        hotCityVOS.forEach(v -> v.setName(cityDict.name(v.getAdcode())));
         redisTemplate.opsForValue().set(RedisKeys.HOT_CITIES, hotCityVOS, 24, TimeUnit.HOURS);
         return hotCityVOS;
     }

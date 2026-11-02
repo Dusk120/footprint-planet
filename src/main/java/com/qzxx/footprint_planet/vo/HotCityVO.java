@@ -12,5 +12,8 @@ public class HotCityVO {
 
     private String name;
 
+    /** 行政区划代码（统计按 adcode 分组，name 由 Service 层反查字典填充） */
+    private String adcode;
+
     private Long count;
 }

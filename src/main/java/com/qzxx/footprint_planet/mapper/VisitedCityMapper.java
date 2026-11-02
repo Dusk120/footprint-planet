@@ -10,12 +10,12 @@ import java.util.List;
 
 public interface VisitedCityMapper extends BaseMapper<VisitedCity> {
 
-    @Select("SELECT COUNT(DISTINCT city_name) FROM visited_city WHERE user_id = #{userId}")
+    @Select("SELECT COUNT(DISTINCT adcode) FROM visited_city WHERE user_id = #{userId}")
     Integer countCitiesByUserId(@Param("userId") Long userId);
 
     @Select("SELECT COUNT(DISTINCT province) FROM visited_city WHERE user_id = #{userId}")
     Integer countProvincesByUserId(@Param("userId") Long userId);
 
-    @Select("select city_name as name, count(*) as count from visited_city group by name order by count desc, name asc limit 5")
+    @Select("select adcode, count(*) as count from visited_city where adcode is not null group by adcode order by count desc, adcode asc limit 5")
     List<HotCityVO> selectHotCities();
 }

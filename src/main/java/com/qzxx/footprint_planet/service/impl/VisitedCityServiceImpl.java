@@ -5,6 +5,7 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.common.CityDict;
 import com.qzxx.footprint_planet.common.RedisKeys;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.VisitedCityDTO;
@@ -30,6 +31,8 @@ public class VisitedCityServiceImpl implements VisitedCityService {
     private VisitedCityMapper visitedCityMapper;
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private CityDict cityDict;
 
 
     @Override
@@ -85,7 +88,14 @@ public class VisitedCityServiceImpl implements VisitedCityService {
 
     @Override
     public VisitedCity addVisitedCity(VisitedCityDTO visitedCityDTO) {
-        int count = visitedCityMapper.selectCount(new QueryWrapper<VisitedCity>().eq("user_id", BaseContext.getCurrentId()).eq("city_name", visitedCityDTO.getCityName())).intValue();
+        String adcode = visitedCityDTO.getAdcode();
+        if (!cityDict.contains(adcode)) {
+            throw new BusinessException(400, "无效的城市代码");
+        }
+        // 防重复按 adcode（同一城市无论名字怎么变都算同一个）
+        int count = visitedCityMapper.selectCount(new QueryWrapper<VisitedCity>()
+                .eq("user_id", BaseContext.getCurrentId())
+                .eq("adcode", adcode)).intValue();
         if (count > 0) {
             throw new BusinessException(400, "该城市已存在");
         }
@@ -94,6 +104,9 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         }
         VisitedCity visitedCity = new VisitedCity();
         BeanUtil.copyProperties(visitedCityDTO, visitedCity);
+        // 用字典标准化 city_name / province（前端传「拉萨」也统一落库「拉萨市」）
+        visitedCity.setCityName(cityDict.name(adcode));
+        visitedCity.setProvince(cityDict.province(adcode));
         visitedCity.setUserId(BaseContext.getCurrentId());
         visitedCity.setCreatedAt(LocalDateTime.now());
         // 未填游玩时间的记录按本次点亮日期兜底（完全空的记录保留）

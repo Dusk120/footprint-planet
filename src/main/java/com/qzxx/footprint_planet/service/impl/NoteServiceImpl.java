@@ -118,10 +118,17 @@ public class NoteServiceImpl implements NoteService {
         note.setAuthorNickname(user.getNickname());
         LocationDTO location = noteDTO.getLocation();
         if (location != null) {
-            Long count = visitedCityMapper.selectCount(new LambdaQueryWrapper<VisitedCity>()
-                    .eq(VisitedCity::getUserId, currentId)
-                    .eq(VisitedCity::getCityName, location.getName())
-                    .eq(VisitedCity::getProvince, location.getProvince()));
+            Long count;
+            if (StringUtils.hasText(location.getAdcode())) {
+                count = visitedCityMapper.selectCount(new LambdaQueryWrapper<VisitedCity>()
+                        .eq(VisitedCity::getUserId, currentId)
+                        .eq(VisitedCity::getAdcode, location.getAdcode()));
+            } else {
+                count = visitedCityMapper.selectCount(new LambdaQueryWrapper<VisitedCity>()
+                        .eq(VisitedCity::getUserId, currentId)
+                        .eq(VisitedCity::getCityName, location.getName())
+                        .eq(VisitedCity::getProvince, location.getProvince()));
+            }
             if (count == 0){
                 throw new BusinessException(400, "该城市还未点亮");
             }
