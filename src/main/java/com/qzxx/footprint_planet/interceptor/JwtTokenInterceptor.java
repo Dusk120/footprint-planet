@@ -67,7 +67,6 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         }
         //3、解析token：缺失/无效/过期统一抛 401 业务异常，
         //   由全局异常处理器返回 {code:401,message,...}（HTTP 200），符合前端解包约定
-        log.info("jwt校验:{}", token);
         Claims claims = JwtUtil.parseJWT(jwtProperties.getSecretKey(), token);
         if (claims == null) {
             throw new BusinessException(401, "未登录或登录已过期");

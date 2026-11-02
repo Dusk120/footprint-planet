@@ -27,7 +27,6 @@ mybatis-plus:
   type-aliases-package: com.qzxx.footprint_planet.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 # ===== JWT（签名密钥）=====
 jwt:

@@ -82,7 +82,7 @@ public class PlanServiceImpl implements PlanService {
         if(plan.getUserId().equals(userId)){
             role = PlanRole.OWNER.name().toLowerCase();
         }
-        if (role == null&& !plan.getIsPublic()) {
+        if (role == null && !Boolean.TRUE.equals(plan.getIsPublic())) {
             throw new BusinessException(404, "计划不存在或无权访问");
         }
         else if (role != null) {
@@ -241,6 +241,7 @@ public class PlanServiceImpl implements PlanService {
         }
     }
 
+    @Transactional
     @Override
     public PlanItem addItem(Long planId, PlanItemDTO dto) {
         Plan plan = requireEditor(planId);
@@ -265,6 +266,7 @@ public class PlanServiceImpl implements PlanService {
         return planItem;
     }
 
+    @Transactional
     @Override
     public PlanItem updateItem(Long planId, Long itemId, PlanItemDTO dto) {
         Plan plan = requireEditor(planId);
@@ -277,6 +279,7 @@ public class PlanServiceImpl implements PlanService {
                     CopyOptions.create()
                             .setIgnoreNullValue(true)
                             .setIgnoreProperties("id","planId","createdAt"));
+            planItemMapper.updateById(planItem);
             int rows = planMapper.updateById(plan);
             if (rows <= 0) {
                 throw new BusinessException(409, "计划已被他人修改，请刷新后重试");
@@ -289,12 +292,16 @@ public class PlanServiceImpl implements PlanService {
         }
     }
 
+    @Transactional
     @Override
     public void deleteItem(Long planId, Long itemId) {
         Plan plan = requireEditor(planId);
         // 删除前先取名称，供动态流展示「谁删除了哪个景点」
         PlanItem target = planItemMapper.selectById(itemId);
-        String itemName = target != null ? target.getName() : null;
+        if (target == null || !target.getPlanId().equals(planId)) {
+            throw new BusinessException(404, "条目不存在或不匹配");
+        }
+        String itemName = target.getName();
         planItemMapper.deleteById(itemId);
         int rows = planMapper.updateById(plan);
         if (rows <= 0) {
@@ -346,6 +353,7 @@ public class PlanServiceImpl implements PlanService {
         broadcastEvent(planId, "reorder");
     }
 
+    @Transactional
     @Override
     public PlanLeg saveLeg(Long planId, PlanLegDTO dto) {
         Plan plan = requireEditor(planId);

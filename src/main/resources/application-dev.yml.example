@@ -45,3 +45,8 @@ aliyun:
     bucket-name:
     url-prefix: # OSS访问域名
 
+# ---- MyBatis-Plus（仅开发环境打印 SQL 便于调试，生产环境请勿配置此项）----
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
