@@ -32,6 +32,28 @@ function formatDate(d) {
   if (!d) return '未设定'
   return d
 }
+
+// 交通段：fromItemId → leg 映射，用于「地点 → 下一地点」之间展示出行方案
+const legMap = computed(() => {
+  const map = {}
+  ;(props.item.legs || []).forEach(l => { map[l.fromItemId] = l })
+  return map
+})
+
+function modeEmoji(mode) {
+  return { walking: '🚶', driving: '🚗', transit: '🚌' }[mode] || '➡️'
+}
+
+// summary 为空时用时长/距离兜底拼一句
+const MODE_LABEL = { walking: '步行', driving: '驾车', transit: '公交' }
+function legText(leg) {
+  if (leg.summary) return leg.summary
+  const label = MODE_LABEL[leg.mode] || '出行'
+  const mins = leg.duration ? Math.max(1, Math.round(leg.duration / 60)) : null
+  const km = leg.distance != null ? `${(leg.distance / 1000).toFixed(1)} 公里` : null
+  const parts = [mins ? `约 ${mins} 分钟` : null, km].filter(Boolean)
+  return parts.length ? `${label}${parts.join(' · ')}` : label
+}
 </script>
 
 <template>
@@ -93,6 +115,7 @@ function formatDate(d) {
             <div class="tl-content">
               <span class="tl-place">{{ it.name }}</span>
               <span v-if="it.note" class="tl-note">{{ it.note }}</span>
+              <span v-if="legMap[it.id]" class="tl-leg">{{ modeEmoji(legMap[it.id].mode) }} {{ legText(legMap[it.id]) }}</span>
             </div>
           </div>
         </div>
@@ -244,4 +267,5 @@ function formatDate(d) {
 .tl-content { display: flex; flex-direction: column; gap: 2px; }
 .tl-place { font-size: 14px; font-weight: 600; }
 .tl-note { font-size: 12px; color: var(--text-muted); }
+.tl-leg { font-size: 12px; color: var(--accent-soft); }
 </style>
