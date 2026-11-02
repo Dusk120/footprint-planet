@@ -10,7 +10,7 @@ public interface RouteProxyService {
      *
      * @param fromCoord 起点坐标（"lng,lat"）
      * @param toCoord   终点坐标（"lng,lat"）
-     * @param mode      交通方式：driving / walking / riding / transit
+     * @param mode      交通方式：driving / walking / transit
      */
     RouteResult calculateLeg(String fromCoord, String toCoord, String mode);
 }

@@ -17,11 +17,18 @@ public final class RedisKeys {
     /** 图形验证码答案缓存（TTL 2 分钟） */
     public static final String CAPTCHA_PREFIX = "captcha:";
 
+    /** 高德算路结果缓存（TTL 7 天） */
+    public static final String ROUTE_PREFIX = "route:";
+
     public static String userStatus(Long userId) {
         return USER_STATUS_PREFIX + userId;
     }
 
     public static String captcha(String uuid) {
         return CAPTCHA_PREFIX + uuid;
+    }
+
+    public static String route(String fromCoord, String toCoord, String mode) {
+        return ROUTE_PREFIX + fromCoord + ":" + toCoord + ":" + mode;
     }
 }

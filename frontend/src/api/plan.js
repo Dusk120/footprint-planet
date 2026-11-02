@@ -32,8 +32,12 @@ export const planApi = {
   reorderItems: (planId, days, version) => http.put(`/plans/${planId}/items/reorder`, { days, version }),
 
   // ===== 交通段 =====
-  // 保存交通段（editor+）
+  // 保存交通段（editor+），body 含 polyline（真实路线坐标串，可空）
   saveLeg: (planId, data) => http.post(`/plans/${planId}/legs`, data),
+  // 后端算路（高德 Web 服务）：from/to 坐标，返回多交通方式方案 + polyline
+  routeSearch: (from, to) => http.post('/route/search', {
+    fromLng: from.lng, fromLat: from.lat, toLng: to.lng, toLat: to.lat
+  }),
 
   // ===== 协作控制（owner）=====
   // 锁定 / 解锁，body { locked }

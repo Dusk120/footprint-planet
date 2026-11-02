@@ -42,10 +42,22 @@ onMounted(async () => {
 // ---------- 权限 ----------
 const canEdit = computed(() => ['owner', 'editor'].includes(plan.value?.myRole))
 const isOwner = computed(() => plan.value?.myRole === 'owner')
-const isLocked = computed(() =>
-  plan.value?.collabLocked ||
-  (plan.value?.collabDeadline && new Date(plan.value.collabDeadline).getTime() < Date.now())
-)
+const isLocked = computed(() => {
+  // owner 不受锁定/截止时间限制（后端 requireEditor 只对 editor 校验锁定）
+  if (plan.value?.myRole === 'owner') return false
+  return plan.value?.collabLocked ||
+    (plan.value?.collabDeadline && new Date(plan.value.collabDeadline).getTime() < Date.now())
+})
+
+// 编辑操作统一入口：editor 在锁定时提示「已锁定」，owner 不受限
+function ensureEditable() {
+  if (!canEdit.value) return false
+  if (isLocked.value) {
+    toast('计划已锁定或已到截止时间，暂不可编辑', 'error')
+    return false
+  }
+  return true
+}
 
 // ---------- 封面上传（仅 owner） ----------
 const coverInput = ref(null)
@@ -101,7 +113,7 @@ function selectDay(d) {
 }
 // 添加新的一天（activeDay 指向最大天 + 1 的空天）
 function addDay() {
-  if (!canEdit.value || isLocked.value) return
+  if (!ensureEditable()) return
   const maxDay = days.value.length ? Math.max(...days.value.map(d => d.dayNo)) : 0
   activeDay.value = maxDay + 1
 }
@@ -133,7 +145,7 @@ const legMap = computed(() => {
   return map
 })
 function modeEmoji(mode) {
-  return { walking: '🚶', driving: '🚗', riding: '🚴', transit: '🚌' }[mode] || '➡️'
+  return { walking: '🚶', driving: '🚗', transit: '🚌' }[mode] || '➡️'
 }
 
 // ---------- 地图搜索 + 添加 ----------
@@ -157,7 +169,7 @@ function focusSearchResult(r) {
 }
 
 async function addToActiveDay({ name, lng, lat, poiId }) {
-  if (!canEdit.value || isLocked.value) return
+  if (!ensureEditable()) return
   if (!name) return
   try {
     await planApi.addItem(planId, { dayNo: activeDay.value, name, lng, lat, poiId: poiId || '' })
@@ -199,14 +211,14 @@ function handleMapSelect({ lng, lat, name, poiId }) {
   openRouteSelect({ name: name || '未命名地点', lng, lat, poiId })
 }
 
-// 通用：计算 from → to 的出行方案并打开弹窗
+// 通用：计算 from → to 的出行方案并打开弹窗（调后端 Web 服务算路）
 async function openRouteDialog(from, to, context) {
   routeContext.value = context
   routeDialog.value = true
   routeLoading.value = true
   routeOptions.value = []
   try {
-    routeOptions.value = await amapRef.value.routeSearch(from, to)
+    routeOptions.value = await planApi.routeSearch(from, to)
   } catch (e) {
     toast(e.message || '路线规划失败', 'error')
   } finally {
@@ -216,7 +228,7 @@ async function openRouteDialog(from, to, context) {
 
 // 添加新地点：当天有最后地点则算「最后地点 → 新地点」方案，否则直接添加
 async function openRouteSelect(target) {
-  if (!canEdit.value || isLocked.value) return
+  if (!ensureEditable()) return
   if (!target.name) return
   const lastItem = getLastItemOfDay(activeDay.value)
   if (!lastItem || lastItem.lng == null || lastItem.lat == null) {
@@ -232,7 +244,7 @@ async function openRouteSelect(target) {
 
 // 补充已有地点之间的方案（点击「请选择出行方案」）
 async function openLegSelect(fromItem) {
-  if (!canEdit.value || isLocked.value) return
+  if (!ensureEditable()) return
   const toItem = getNextItemOf(fromItem)
   if (!toItem || toItem.lng == null || toItem.lat == null) return
   await openRouteDialog(
@@ -255,7 +267,8 @@ async function chooseRoute(option) {
         mode: option.mode,
         duration: Math.round(option.duration * 60),
         distance: Math.round(option.distance * 1000),
-        summary: option.summary
+        summary: option.summary,
+        polyline: option.polyline || ''
       })
       searchResults.value = []
       searchKw.value = ''
@@ -266,7 +279,8 @@ async function chooseRoute(option) {
         mode: option.mode,
         duration: Math.round(option.duration * 60),
         distance: Math.round(option.distance * 1000),
-        summary: option.summary
+        summary: option.summary,
+        polyline: option.polyline || ''
       })
     }
     routeDialog.value = false
@@ -292,7 +306,7 @@ async function chooseDirectAdd() {
 const editDialog = ref(false)
 const editForm = ref({ id: null, name: '', note: '' })
 function openEdit(item) {
-  if (!canEdit.value || isLocked.value) return
+  if (!ensureEditable()) return
   editForm.value = { id: item.id, name: item.name, note: item.note || '' }
   editDialog.value = true
 }
@@ -309,6 +323,7 @@ async function saveEdit() {
 }
 
 async function deleteItem(item) {
+  if (!ensureEditable()) return
   try {
     await planApi.deleteItem(planId, item.id)
     await loadDetail()
@@ -576,7 +591,7 @@ onUnmounted(() => {
         <!-- 地图 -->
         <div class="map-panel glass-panel">
           <!-- 搜索工具栏：搜索地点加入选中的天 -->
-          <div v-if="canEdit && !isLocked" class="search-toolbar">
+          <div v-if="canEdit" class="search-toolbar">
             <div class="search-target">
               <span class="target-label">添加到</span>
               <span class="target-day">第 {{ activeDay }} 天</span>
@@ -595,14 +610,14 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-          <AmapMap ref="amapRef" :items="plan.items" :editable="canEdit && !isLocked" :destination="plan.destination" @select="handleMapSelect" />
+          <AmapMap ref="amapRef" :items="plan.items" :legs="plan.legs" :editable="canEdit && !isLocked" :destination="plan.destination" @select="handleMapSelect" />
         </div>
 
         <!-- 行程面板 -->
         <div class="itinerary-panel glass-panel">
           <div class="panel-title-row">
             <div class="panel-title">行程安排</div>
-            <button v-if="canEdit && !isLocked" class="add-day-btn" @click="addDay">＋ 添加天</button>
+            <button v-if="canEdit" class="add-day-btn" @click="addDay">＋ 添加天</button>
           </div>
           <div v-if="!days.length" class="empty">暂无行程，在地图上方搜索地点加入</div>
           <div
@@ -640,15 +655,15 @@ onUnmounted(() => {
                         <span class="item-name">{{ item.name }}</span>
                         <span v-if="item.note" class="item-note">{{ item.note }}</span>
                       </div>
-                      <button v-if="canEdit && !isLocked" class="item-edit" title="编辑" @click.stop="openEdit(item)">✎</button>
-                      <button v-if="canEdit && !isLocked" class="item-del" title="删除" @click.stop="deleteItem(item)">✕</button>
+                      <button v-if="canEdit" class="item-edit" title="编辑" @click.stop="openEdit(item)">✎</button>
+                      <button v-if="canEdit" class="item-del" title="删除" @click.stop="deleteItem(item)">✕</button>
                     </div>
                     <div v-if="legMap[item.id]" class="item-leg item-leg-has">
                       <span class="leg-text">{{ modeEmoji(legMap[item.id].mode) }} {{ legMap[item.id].summary }}</span>
-                      <span v-if="canEdit && !isLocked" class="leg-modify" @click.stop="openLegSelect(item)">修改</span>
+                      <span v-if="canEdit" class="leg-modify" @click.stop="openLegSelect(item)">修改</span>
                     </div>
                     <div
-                      v-else-if="canEdit && !isLocked && getNextItemOf(item)"
+                      v-else-if="canEdit && getNextItemOf(item)"
                       class="item-leg item-leg-empty"
                       @click.stop="openLegSelect(item)"
                     >

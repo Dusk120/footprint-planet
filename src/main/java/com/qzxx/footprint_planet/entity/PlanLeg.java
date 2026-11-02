@@ -20,7 +20,7 @@ public class PlanLeg {
 
     private Long toItemId;
 
-    /** driving / walking / riding / transit */
+    /** driving / walking / transit */
     private String mode;
 
     /** 时长（秒） */

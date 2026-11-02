@@ -13,7 +13,7 @@ public class PlanLegDTO {
     @NotNull(message = "终点不能为空")
     private Long toItemId;
 
-    /** driving / walking / riding / transit */
+    /** driving / walking / transit */
     @NotBlank(message = "交通方式不能为空")
     private String mode;
 

@@ -27,6 +27,14 @@ footprint:
     ttl: 7200000
     # 设置前端传递过来的令牌名称
     token-name: Authorization
+  # ---- 前端地址（拼邀请链接 link 用）----
+  frontend-url: http://localhost:5173
+  # ---- 高德地图 ----
+  amap:
+    # 高德 Web 服务 key（后端算路、绘制真实路线用，注意不是前端「Web 端(JS API)」key）。
+    # 申请：高德开放平台 https://lbs.amap.com/ 创建「Web 服务」类型应用，复制 key 填到冒号后。
+    # 不填也能启动，只是「出行方案」算路会失败、地图上回退为直线。
+    web-key:
 
 # ---- 阿里云 OSS（图片上传用）----
 aliyun:

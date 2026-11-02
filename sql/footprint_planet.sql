@@ -146,7 +146,7 @@ CREATE TABLE plan_leg (
   plan_id      BIGINT       NOT NULL COMMENT '所属计划',
   from_item_id BIGINT       NOT NULL COMMENT '起点条目',
   to_item_id   BIGINT       NOT NULL COMMENT '终点条目',
-  mode         VARCHAR(20)  NOT NULL COMMENT '交通方式：driving/walking/riding/transit',
+  mode         VARCHAR(20)  NOT NULL COMMENT '交通方式：driving/walking/transit',
   duration     INT          DEFAULT NULL COMMENT '时长（秒）',
   distance     INT          DEFAULT NULL COMMENT '距离（米）',
   summary      VARCHAR(255) DEFAULT NULL COMMENT '方案摘要（如"地铁2号线→10号线，52分钟"）',

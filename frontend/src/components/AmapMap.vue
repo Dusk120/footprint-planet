@@ -10,6 +10,8 @@ const AMAP_SECURITY = '632b70f33258fe8b573e880da2dd0dec'
 const props = defineProps({
   // 行程条目：{ id, name, lng, lat, dayNo, sortNo }
   items: { type: Array, default: () => [] },
+  // 交通段：{ fromItemId, toItemId, mode, duration, distance, summary, polyline }
+  legs: { type: Array, default: () => [] },
   // 是否可点击地图选点（编辑者且未锁定时为 true）
   editable: { type: Boolean, default: false },
   // 目的地名称（用于地理编码定位地图初始中心，可为空）
@@ -39,7 +41,7 @@ function toggleLabels() {
 }
 
 // 不同天的路线用不同颜色区分（循环取色）
-const DAY_COLORS = ['#38bdf8', '#f97316', '#22c55e', '#f43f5e', '#a855f7', '#eab308']
+const DAY_COLORS = ['#0284c7', '#ea580c', '#16a34a', '#e11d48', '#9333ea', '#ca8a04']
 
 async function init() {
   try {
@@ -52,7 +54,7 @@ async function init() {
       key: AMAP_KEY,
       version: '2.0',
       ...(AMAP_SECURITY ? { securityJsCode: AMAP_SECURITY } : {}),
-      plugins: ['AMap.Geocoder', 'AMap.PlaceSearch', 'AMap.Driving', 'AMap.Walking', 'AMap.Riding', 'AMap.Transfer']
+      plugins: ['AMap.Geocoder', 'AMap.PlaceSearch', 'AMap.Driving', 'AMap.Walking', 'AMap.Transfer']
     })
     map = new AMap.Map(mapEl.value, { zoom: 11, center: [116.397428, 39.90923] })
     geocoder = new AMap.Geocoder({})
@@ -78,16 +80,26 @@ async function init() {
 }
 
 function handleMapClick(e) {
-  // 点击地图选点：逆地理编码拿地点名 + POI id，回传给父组件
-  geocoder.getAddress([e.lnglat.lng, e.lnglat.lat], (status, result) => {
+  // 点击地图选点：逆地理编码拿地点名，再主动调 PlaceSearch 用该名查精确 poiId
+  const lng = e.lnglat.lng
+  const lat = e.lnglat.lat
+  geocoder.getAddress([lng, lat], (status, result) => {
     if (status !== 'complete' || !result || result.info !== 'OK') {
       console.warn('[AmapMap] 逆地理编码失败', status, result)
-      emit('select', { lng: e.lnglat.lng, lat: e.lnglat.lat, name: '', poiId: '' })
+      emit('select', { lng, lat, name: '', poiId: '' })
       return
     }
     const name = extractName(result)
-    const poiId = result.regeocode?.pois?.[0]?.id || ''
-    emit('select', { lng: e.lnglat.lng, lat: e.lnglat.lat, name, poiId })
+    if (!name) {
+      emit('select', { lng, lat, name: '', poiId: '' })
+      return
+    }
+    // 逆地理编码返回的 pois 里 id 常常为空，改为主动搜索地点名拿可靠 poiId
+    placeSearch.search(name, (s, r) => {
+      const pid = (s === 'complete' && r && r.info === 'OK' && r.poiList && r.poiList.pois && r.poiList.pois.length)
+        ? r.poiList.pois[0].id : ''
+      emit('select', { lng, lat, name, poiId: pid })
+    })
   })
 }
 
@@ -128,14 +140,13 @@ function search(keyword) {
 
 // 出行方案计算：from/to 为 {lng, lat}，返回 [{ mode, label, duration, distance, summary }]
 // duration 单位分钟、distance 单位公里（展示用；保存 plan_leg 时前端换算成秒/米）
-// 真实调用高德 JSAPI 路线规划插件（Walking/Driving/Riding/Transfer），非 mock
+// 真实调用高德 JSAPI 路线规划插件（Walking/Driving/Transfer），非 mock
 function routeSearch(from, to) {
   return new Promise((resolve) => {
     if (!AMap || !from?.lng || !to?.lng) { resolve([]); return }
     const modes = [
       { mode: 'walking', label: '步行', Cls: AMap.Walking },
       { mode: 'driving', label: '驾车', Cls: AMap.Driving },
-      { mode: 'riding', label: '骑行', Cls: AMap.Riding },
       { mode: 'transit', label: '公交', Cls: AMap.Transfer, isTransit: true }
     ]
     const results = []
@@ -202,6 +213,14 @@ function focusOn({ lng, lat, name }) {
 
 defineExpose({ search, routeSearch, focusOn })
 
+// "lng,lat;lng,lat" -> [[lng,lat],[lng,lat]]
+function parsePolyline(str) {
+  if (!str) return []
+  return str.split(';')
+    .map(s => s.split(',').map(Number))
+    .filter(p => p.length === 2 && !isNaN(p[0]) && !isNaN(p[1]))
+}
+
 function render() {
   if (!map || !AMap) return
   markers.forEach(m => m.remove())
@@ -225,7 +244,10 @@ function render() {
     return m
   })
 
-  // 连线：按 dayNo 分组，每天一条不同颜色的线
+  // 连线：优先 leg.polyline（真实路线），否则相邻地点直线；按 dayNo 分色
+  const legMap = {}
+  ;(props.legs || []).forEach(l => { if (l.fromItemId != null) legMap[l.fromItemId] = l })
+
   const byDay = {}
   pts.forEach(p => {
     const d = p.dayNo ?? 0
@@ -234,18 +256,24 @@ function render() {
   const dayNumbers = Object.keys(byDay).map(Number).sort((a, b) => a - b)
   dayNumbers.forEach((dayNo, idx) => {
     const list = (byDay[dayNo] || []).sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0))
-    if (list.length < 2) return
-    const path = list.map(p => [p.lng, p.lat])
-    const pl = new AMap.Polyline({
-      path,
-      strokeColor: DAY_COLORS[idx % DAY_COLORS.length],
-      strokeWeight: 3,
-      strokeDasharray: [8, 6],
-      lineJoin: 'round',
-      showDir: true
+    const color = DAY_COLORS[idx % DAY_COLORS.length]
+    list.forEach((item, i) => {
+      const next = list[i + 1]
+      if (!next) return
+      const leg = legMap[item.id]
+      let path = (leg && leg.polyline) ? parsePolyline(leg.polyline) : []
+      if (!path.length) path = [[item.lng, item.lat], [next.lng, next.lat]]
+      const pl = new AMap.Polyline({
+        path,
+        strokeColor: color,
+        strokeWeight: 3,
+        strokeDasharray: [8, 6],
+        lineJoin: 'round',
+        showDir: true
+      })
+      pl.setMap(map)
+      polylines.push(pl)
     })
-    pl.setMap(map)
-    polylines.push(pl)
   })
 
   // 自适应视野：只在「新增地点」（有效点数量增加）时调用，避免编辑/删除/排序每次操作都跳视野 + 重载瓦片
@@ -256,6 +284,7 @@ function render() {
 }
 
 watch(() => props.items, render, { deep: true })
+watch(() => props.legs, render, { deep: true })
 
 onMounted(init)
 onUnmounted(() => {
