@@ -25,6 +25,7 @@ import com.qzxx.footprint_planet.vo.CollaboratorVO;
 import com.qzxx.footprint_planet.vo.PageVO;
 import com.qzxx.footprint_planet.vo.PlanDetailVO;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class PlanServiceImpl implements PlanService {
     @Resource
     private PlanMapper planMapper;
@@ -455,6 +457,11 @@ public class PlanServiceImpl implements PlanService {
         for (int i = 0; i < kv.length; i += 2) {
             event.put((String) kv[i], kv[i + 1]);
         }
-        messagingTemplate.convertAndSend("/topic/plan/" + planId, (Object) event);
+        try {
+            messagingTemplate.convertAndSend("/topic/plan/" + planId, (Object) event);
+        } catch (Exception e) {
+            // 实时广播是「尽力而为」的同步：数据已落库，推送失败不影响主流程，订阅者刷新仍可见
+            log.warn("计划变更广播推送失败，已忽略: planId={}, type={}", planId, type, e);
+        }
     }
 }
