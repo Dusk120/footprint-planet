@@ -129,6 +129,14 @@ export const useAppStore = defineStore('app', () => {
     user.value.visitedProvinces = new Set(visitedCityList.value.map(c => c.province).filter(Boolean)).size
   }
 
+  // 重新拉取当前用户信息：旅行里程/天数由后端在点亮城市后重算落库，刷新后才能拿到最新值
+  async function refreshMe() {
+    try {
+      const u = await authApi.me()
+      setUserData(u)
+    } catch (e) { /* 刷新失败不影响主流程，下次进页面会再拉 */ }
+  }
+
   async function loadVisited() {
     const list = await visitedApi.list()
     visitedCityList.value = (list || []).map(fromApiVisited)
@@ -185,6 +193,7 @@ export const useAppStore = defineStore('app', () => {
     const created = await visitedApi.add(toApiVisited(city))
     visitedCityList.value.push(fromApiVisited(created))
     refreshUserStats()
+    await refreshMe()
     return fromApiVisited(created)
   }
 
@@ -193,6 +202,8 @@ export const useAppStore = defineStore('app', () => {
     const updated = await visitedApi.update(id, toApiVisited(city))
     const idx = visitedCityList.value.findIndex(c => c.id === id)
     if (idx >= 0) visitedCityList.value[idx] = fromApiVisited(updated)
+    refreshUserStats()
+    await refreshMe()
     return true
   }
 
@@ -200,6 +211,7 @@ export const useAppStore = defineStore('app', () => {
     await visitedApi.remove(city.id)
     visitedCityList.value = visitedCityList.value.filter(c => c.id !== city.id)
     refreshUserStats()
+    await refreshMe()
     return true
   }
 
@@ -272,7 +284,7 @@ export const useAppStore = defineStore('app', () => {
     isLoggedIn, currentUser, user, isAdmin,
     login, register, logout, bootstrap, ensureInit, updateProfile,
     theme, toggleTheme,
-    visitedCityList, addVisitedCity, updateVisitedCity, removeVisitedCity,
+    visitedCityList, addVisitedCity, updateVisitedCity, removeVisitedCity, refreshMe,
     fetchMemories,
     fetchPlans, fetchAuthorPlans, addPlan, removePlan, updatePlan,
     copyAuthorPlan,

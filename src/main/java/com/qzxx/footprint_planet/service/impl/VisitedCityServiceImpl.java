@@ -11,11 +11,13 @@ import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.VisitedCityDTO;
 import com.qzxx.footprint_planet.entity.VisitedCity;
 import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
+import com.qzxx.footprint_planet.service.UserService;
 import com.qzxx.footprint_planet.service.VisitedCityService;
 import com.qzxx.footprint_planet.vo.MemoryVO;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
@@ -33,6 +35,8 @@ public class VisitedCityServiceImpl implements VisitedCityService {
     private RedisTemplate<String, Object> redisTemplate;
     @Resource
     private CityDict cityDict;
+    @Resource
+    private UserService userService;
 
 
     @Override
@@ -87,6 +91,7 @@ public class VisitedCityServiceImpl implements VisitedCityService {
     }
 
     @Override
+    @Transactional
     public VisitedCity addVisitedCity(VisitedCityDTO visitedCityDTO) {
         String adcode = visitedCityDTO.getAdcode();
         if (!cityDict.contains(adcode)) {
@@ -113,10 +118,13 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         fillRecordDates(visitedCity.getRecords(), visitedCity.getLightDate());
         visitedCityMapper.insert(visitedCity);
         redisTemplate.delete(RedisKeys.HOT_CITIES);
+        // 点亮新城市后重算并落库旅行里程/天数
+        userService.recalculateAndSaveStats(visitedCity.getUserId());
         return visitedCity;
     }
 
     @Override
+    @Transactional
     public VisitedCity updateVisitedCity(Long id, VisitedCityDTO visitedCityDTO) {
         VisitedCity visitedCity = visitedCityMapper.selectById(id);
         if (visitedCity == null) {
@@ -144,10 +152,13 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         }
         fillRecordDates(visitedCity.getRecords(), visitedCity.getLightDate());
         visitedCityMapper.updateById(visitedCity);
+        // 修改城市（坐标/日期可能变）后重算旅行里程/天数
+        userService.recalculateAndSaveStats(visitedCity.getUserId());
         return visitedCity;
     }
 
     @Override
+    @Transactional
     public void deleteVisitedCity(Long id) {
         VisitedCity visitedCity = visitedCityMapper.selectById(id);
         if (visitedCity == null) {
@@ -158,6 +169,8 @@ public class VisitedCityServiceImpl implements VisitedCityService {
         }
         redisTemplate.delete(RedisKeys.HOT_CITIES);
         visitedCityMapper.deleteById(id);
+        // 删除城市后重算旅行里程/天数
+        userService.recalculateAndSaveStats(visitedCity.getUserId());
     }
 
     /** 游玩时间兜底：记录里的 date 为空 → 该城市点亮日期 → 当天 */

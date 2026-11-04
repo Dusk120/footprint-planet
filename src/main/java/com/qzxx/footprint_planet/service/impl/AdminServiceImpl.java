@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -121,6 +122,9 @@ public class AdminServiceImpl implements AdminService {
         if (user != null) {
             AdminUserDetailVO adminUserDetailVO = new AdminUserDetailVO();
             BeanUtil.copyProperties(user, adminUserDetailVO);
+            // 旅行天数不再落库，实时计算
+            adminUserDetailVO.setTotalDays(user.getCreatedAt() == null ? 0
+                    : (int) ChronoUnit.DAYS.between(user.getCreatedAt(), LocalDateTime.now()));
             adminUserDetailVO.setNoteCount(noteMapper.selectCount(new LambdaQueryWrapper<Note>().eq(Note::getAuthorId, user.getId())).intValue());
             adminUserDetailVO.setVisitedCount(visitedCityMapper.selectCount(new LambdaQueryWrapper<VisitedCity>().eq(VisitedCity::getUserId, user.getId())).intValue());
             adminUserDetailVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(id));

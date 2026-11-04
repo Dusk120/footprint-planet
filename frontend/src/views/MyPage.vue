@@ -252,7 +252,7 @@ async function handlePlanDialogConfirm(data) {
       <div class="stats-grid">
         <StatCard label="已点亮城市" :value="profileUser.visitedCities" />
         <StatCard label="累计省份" :value="profileUser.visitedProvinces" />
-        <StatCard label="飞行里程" :value="formatKm(profileUser.totalKm)" unit="km" />
+        <StatCard label="旅行里程" :value="formatKm(profileUser.totalKm)" unit="km" />
         <StatCard label="旅行天数" :value="profileUser.totalDays" />
       </div>
     </section>

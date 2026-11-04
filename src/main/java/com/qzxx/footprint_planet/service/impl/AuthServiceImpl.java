@@ -11,9 +11,9 @@ import com.qzxx.footprint_planet.dto.request.LoginDTO;
 import com.qzxx.footprint_planet.dto.request.RegisterDTO;
 import com.qzxx.footprint_planet.entity.User;
 import com.qzxx.footprint_planet.mapper.UserMapper;
-import com.qzxx.footprint_planet.mapper.VisitedCityMapper;
 import com.qzxx.footprint_planet.service.AuthService;
 import com.qzxx.footprint_planet.service.CaptchaService;
+import com.qzxx.footprint_planet.service.UserService;
 import com.qzxx.footprint_planet.utils.JwtUtil;
 import com.qzxx.footprint_planet.vo.LoginVO;
 import com.qzxx.footprint_planet.vo.UserVO;
@@ -37,7 +37,7 @@ public class AuthServiceImpl implements AuthService {
     @Resource
     private UserMapper userMapper;
     @Resource
-    private VisitedCityMapper visitedCityMapper;
+    private UserService userService;
 
     @Override
     public LoginVO login(LoginDTO loginDTO) {
@@ -53,10 +53,12 @@ public class AuthServiceImpl implements AuthService {
         if (user.getStatus() == 1) {
             throw new BusinessException(400,"账号已被禁用");
         }
+        // 登录时重算旅行里程/天数并落库，保证读到最新值
+        userService.recalculateAndSaveStats(user.getId());
+        user = userMapper.selectById(user.getId());
         UserVO userVO = new UserVO();
         BeanUtil.copyProperties(user, userVO);
-        userVO.setVisitedCities(visitedCityMapper.countCitiesByUserId(user.getId()));
-        userVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(user.getId()));
+        userService.fillUserStats(userVO, user);
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("role", user.getRole());
@@ -88,13 +90,11 @@ public class AuthServiceImpl implements AuthService {
         user.setStatus(0);
         user.setCreatedAt(LocalDateTime.now());
         user.setTotalKm(0);
-        user.setTotalDays(0);
         user.setMotto("");
         userMapper.insert(user);
         UserVO userVO = new UserVO();
         BeanUtil.copyProperties(user, userVO);
-        userVO.setVisitedCities(0);
-        userVO.setVisitedProvinces(0);
+        userService.fillUserStats(userVO, user);
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("role", user.getRole());
@@ -121,8 +121,7 @@ public class AuthServiceImpl implements AuthService {
         }
         UserVO userVO = new UserVO();
         BeanUtil.copyProperties(user, userVO);
-        userVO.setVisitedCities(visitedCityMapper.countCitiesByUserId(userId));
-        userVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(userId));
+        userService.fillUserStats(userVO, user);
         return userVO;
     }
 }

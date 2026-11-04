@@ -52,7 +52,6 @@ CREATE TABLE user (
   avatar      VARCHAR(255) DEFAULT NULL COMMENT '头像URL（可空）',
   motto       VARCHAR(100) DEFAULT NULL COMMENT '个性签名/座右铭',
   total_km    INT          NOT NULL DEFAULT 0 COMMENT '累计里程（km）',
-  total_days  INT          NOT NULL DEFAULT 0 COMMENT '累计旅行天数',
   role        VARCHAR(20)  NOT NULL DEFAULT 'USER' COMMENT '角色：USER 普通用户 / ADMIN 管理员',
   status      TINYINT      NOT NULL DEFAULT 0 COMMENT '状态：0 正常 / 1 禁用',
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
@@ -61,12 +60,12 @@ CREATE TABLE user (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户';
 
 -- 演示用户（密码均为 123456）
-INSERT INTO user (id, username, password, nickname, avatar, motto, role, total_km, total_days, created_at) VALUES
-(1, 'admin',         '$2a$10$vMDo8.gKIfsZIdcAPokj0.VdqkkcUJUi8SgFSTIUv6wkCIP0a.DtO', '管理员',      NULL, '足迹星球的守护者',        'ADMIN', 0,     0,     '2026-07-01 09:00:00'),
-(2, 'xiaoA',         '$2a$10$9s400kBaxdwTmN33Uav9a.Lq9/KsgY0IrLC0RLbWUY4/VlAe2Xmz2', '旅行者小A',   NULL, '世界那么大，我想去看看',   'USER',  68500, 156,   '2026-07-03 14:20:00'),
-(3, 'zhangsan',      '$2a$10$5lC6apTcnltZs2Ke5aMBTeOYGwV0jumITzZRDN5VBsrqjD1lFmbay', '张三',        NULL, '把日子过成诗',            'USER',  1200,  8,     '2026-08-05 10:30:00'),
-(4, 'zhuiguangzhe',  '$2a$10$snjpvdSyhTjBBh1HQvfZpeWs.jnvI0Xvvxjh0.RVbxs4u9nq0aw.i', '追光者',      NULL, '向着光的方向出发',        'USER',  9800,  42,    '2026-07-15 16:45:00'),
-(5, 'xinghe',        '$2a$10$vMDo8.gKIfsZIdcAPokj0.VdqkkcUJUi8SgFSTIUv6wkCIP0a.DtO', '星河旅人',    NULL, '把世界走成自己的地图',    'USER',  5600,  21,    '2026-07-28 11:00:00');
+INSERT INTO user (id, username, password, nickname, avatar, motto, role, total_km, created_at) VALUES
+(1, 'admin',         '$2a$10$vMDo8.gKIfsZIdcAPokj0.VdqkkcUJUi8SgFSTIUv6wkCIP0a.DtO', '管理员',      NULL, '足迹星球的守护者',        'ADMIN', 0,     '2026-07-01 09:00:00'),
+(2, 'xiaoA',         '$2a$10$9s400kBaxdwTmN33Uav9a.Lq9/KsgY0IrLC0RLbWUY4/VlAe2Xmz2', '旅行者小A',   NULL, '世界那么大，我想去看看',   'USER',  68500, '2026-07-03 14:20:00'),
+(3, 'zhangsan',      '$2a$10$5lC6apTcnltZs2Ke5aMBTeOYGwV0jumITzZRDN5VBsrqjD1lFmbay', '张三',        NULL, '把日子过成诗',            'USER',  1200,  '2026-08-05 10:30:00'),
+(4, 'zhuiguangzhe',  '$2a$10$snjpvdSyhTjBBh1HQvfZpeWs.jnvI0Xvvxjh0.RVbxs4u9nq0aw.i', '追光者',      NULL, '向着光的方向出发',        'USER',  9800,  '2026-07-15 16:45:00'),
+(5, 'xinghe',        '$2a$10$vMDo8.gKIfsZIdcAPokj0.VdqkkcUJUi8SgFSTIUv6wkCIP0a.DtO', '星河旅人',    NULL, '把世界走成自己的地图',    'USER',  5600,  '2026-07-28 11:00:00');
 
 -- ------------------------------------------------------------
 -- 2. visited_city（点亮城市 / 旅行回忆）

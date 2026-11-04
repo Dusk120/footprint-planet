@@ -11,6 +11,7 @@ import com.qzxx.footprint_planet.dto.request.UpdateProfileDTO;
 import com.qzxx.footprint_planet.entity.Note;
 import com.qzxx.footprint_planet.entity.Plan;
 import com.qzxx.footprint_planet.entity.User;
+import com.qzxx.footprint_planet.entity.VisitedCity;
 import com.qzxx.footprint_planet.mapper.NoteMapper;
 import com.qzxx.footprint_planet.mapper.PlanMapper;
 import com.qzxx.footprint_planet.mapper.UserMapper;
@@ -24,6 +25,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -91,8 +94,7 @@ public class UserServiceImpl implements UserService {
         }
         UserVO userVO = new UserVO();
         BeanUtil.copyProperties(user, userVO);
-        userVO.setVisitedCities(visitedCityMapper.countCitiesByUserId(userId));
-        userVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(userId));
+        fillUserStats(userVO, user);
         return userVO;
     }
 
@@ -106,8 +108,7 @@ public class UserServiceImpl implements UserService {
         UserVO userVO = new UserVO();
         BeanUtil.copyProperties(user, userVO);
         authorProfileVO.setUser(userVO);
-        userVO.setVisitedCities(visitedCityMapper.countCitiesByUserId(user.getId()));
-        userVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(user.getId()));
+        fillUserStats(userVO, user);
         authorProfileVO.setNotesCount(noteMapper.selectCount(new LambdaQueryWrapper<Note>().eq(Note::getAuthorId, user.getId())).intValue());
         authorProfileVO.setPlansCount(planMapper.selectCount(new LambdaQueryWrapper<Plan>().eq(Plan::getUserId, user.getId()).eq(Plan::getIsPublic, true)).intValue());
         return authorProfileVO;
@@ -121,5 +122,65 @@ public class UserServiceImpl implements UserService {
                 .eq(Plan::getUserId, id)
                 .eq(Plan::getIsPublic, true));
         return new PageVO<>(result.getRecords(), result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    @Override
+    public void fillUserStats(UserVO userVO, User user) {
+        // 城市数/省份数是轻量 count，实时查即可
+        userVO.setVisitedCities(visitedCityMapper.countCitiesByUserId(user.getId()));
+        userVO.setVisitedProvinces(visitedCityMapper.countProvincesByUserId(user.getId()));
+        // 里程：写时重算落库，读时直读（避免每次查城市列表 + 算距离）
+        userVO.setTotalKm(user.getTotalKm() == null ? 0 : user.getTotalKm());
+        // 天数：纯内存计算、成本可忽略，实时算 —— 这样看别人主页时也是最准确的，不会冻结在对方上次登录那天
+        userVO.setTotalDays(calculateTotalDays(user));
+    }
+
+    @Override
+    public void recalculateAndSaveStats(Long userId) {
+        // 只落库里程（读时直读）；天数改为读取时实时算，不再落库
+        int km = calculateTotalKm(userId);
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, userId)
+                .set(User::getTotalKm, km));
+    }
+
+    /** 旅行里程（km）：按点亮日期顺序连接各城市，累加相邻城市球面距离 */
+    private int calculateTotalKm(Long userId) {
+        List<VisitedCity> cities = visitedCityMapper.selectList(
+                new LambdaQueryWrapper<VisitedCity>()
+                        .eq(VisitedCity::getUserId, userId)
+                        .isNotNull(VisitedCity::getLat)
+                        .isNotNull(VisitedCity::getLng)
+                        .orderByAsc(VisitedCity::getLightDate)
+                        .orderByAsc(VisitedCity::getId));
+        if (cities.size() < 2) {
+            return 0;
+        }
+        double total = 0;
+        for (int i = 1; i < cities.size(); i++) {
+            VisitedCity from = cities.get(i - 1);
+            VisitedCity to = cities.get(i);
+            total += haversineKm(from.getLat(), from.getLng(), to.getLat(), to.getLng());
+        }
+        return (int) Math.round(total);
+    }
+
+    /** 旅行天数：注册至今的天数 */
+    private int calculateTotalDays(User user) {
+        if (user.getCreatedAt() == null) {
+            return 0;
+        }
+        return (int) ChronoUnit.DAYS.between(user.getCreatedAt(), LocalDateTime.now());
+    }
+
+    /** Haversine 球面距离（km） */
+    private double haversineKm(double lat1, double lng1, double lat2, double lng2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return 6371.0 * c;
     }
 }

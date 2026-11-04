@@ -28,8 +28,6 @@ public class User {
 
     private Integer totalKm;
 
-    private Integer totalDays;
-
     /** 角色：ADMIN / USER（默认 USER） */
     private String role;
 

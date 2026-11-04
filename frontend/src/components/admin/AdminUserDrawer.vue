@@ -79,7 +79,7 @@ function formatKm(n) {
                 </div>
                 <div class="u-stat">
                   <span class="u-num">{{ formatKm(detail.totalKm) }}</span>
-                  <span class="u-lbl">飞行里程 km</span>
+                  <span class="u-lbl">旅行里程 km</span>
                 </div>
                 <div class="u-stat">
                   <span class="u-num">{{ detail.totalDays ?? 0 }}</span>
