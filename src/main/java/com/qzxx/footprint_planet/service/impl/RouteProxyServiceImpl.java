@@ -6,12 +6,15 @@ import com.qzxx.footprint_planet.vo.RouteResult;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,7 +30,21 @@ public class RouteProxyServiceImpl implements RouteProxyService {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
-    private final RestClient restClient = RestClient.create();
+    /**
+     * 必须显式设置连接/读取超时：RestClient.create() 默认不限时，
+     * 高德响应慢或网络异常时会把 Tomcat 线程一直占住，几个卡住的请求就能拖慢整站。
+     * 正常算路 200ms~3s，超过 3s 基本是异常，快速失败后由调用方降级为「该方式无结果」。
+     */
+    private final RestClient restClient = RestClient.builder()
+            .requestFactory(createRequestFactory())
+            .build();
+
+    private static ClientHttpRequestFactory createRequestFactory() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(2));
+        factory.setReadTimeout(Duration.ofSeconds(3));
+        return factory;
+    }
 
     @Override
     public RouteResult calculateLeg(String fromCoord, String toCoord, String mode) {
