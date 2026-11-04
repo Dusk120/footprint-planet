@@ -1,0 +1,110 @@
+# 足迹星球：全容器化部署编排
+# 用法：docker compose up -d --build
+# 启动前请先阅读 README 部署说明，并替换下方 CHANGE-ME 占位的密钥/密码
+
+services:
+  mysql:
+    # 自定义构建：建库脚本打进镜像，避免运行时 bind mount 的本地路径问题（兼容远程 Docker 构建）
+    build:
+      context: ./sql
+      dockerfile: Dockerfile
+    container_name: fp-mysql
+    restart: unless-stopped
+    networks:
+      - fp-network
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    # 项目按 MySQL 8 + utf8mb4 开发（JSON 列、外键级联）
+    # 小内存机器压低 InnoDB 缓冲池与连接数
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=128M
+      - --max_connections=80
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      # 注意：backend 走 Docker 内部网络连 mysql:3306，不受此映射影响，保持 3306 即可
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    container_name: fp-redis
+    restart: unless-stopped
+    networks:
+      - fp-network
+    ports:
+      # backend 走 Docker 内部网络连 redis:6379，不受此映射影响
+      - "6380:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fp-backend
+    restart: unless-stopped
+    networks:
+      - fp-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      # 覆盖默认 dev profile，避免加载本地 application-dev.yml；配置全部走环境变量
+      SPRING_PROFILES_ACTIVE: prod
+
+      # ===== MySQL（指向服务名 mysql，而非 localhost）=====
+      FOOTPRINT_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      FOOTPRINT_DATASOURCE_HOST: mysql
+      FOOTPRINT_DATASOURCE_PORT: "3306"
+      FOOTPRINT_DATASOURCE_DATABASE: footprint_planet
+      FOOTPRINT_DATASOURCE_USERNAME: root
+      FOOTPRINT_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+      # ===== Redis（指向服务名 redis）=====
+      FOOTPRINT_REDIS_HOST: redis
+      FOOTPRINT_REDIS_PORT: "6379"
+      FOOTPRINT_REDIS_PASSWORD: ""
+
+      # ===== JWT：务必替换为自己的 ≥32 字节随机串 =====
+      FOOTPRINT_JWT_SECRET_KEY: ${FOOTPRINT_JWT_SECRET_KEY}
+      FOOTPRINT_JWT_TTL: "7200000"
+      FOOTPRINT_JWT_TOKEN_NAME: Authorization
+
+      # 前端访问地址（拼邀请链接用）：容器化后前端走 81 端口
+      FOOTPRINT_FRONTEND_URL: ${FOOTPRINT_FRONTEND_URL:-}
+
+      # 高德 Web 服务 key（可选；不填则「出行方案」算路降级为直线）
+      FOOTPRINT_AMAP_WEB_KEY: ${FOOTPRINT_AMAP_WEB_KEY:-}
+
+      # 小内存机器压低 JVM 堆，降低 OOM 风险
+      JAVA_OPTS: -Xms128m -Xmx320m
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fp-frontend
+    restart: unless-stopped
+    networks:
+      - fp-network
+    depends_on:
+      - backend
+    ports:
+      - "81:80"
+
+# 显式定义网络：所有服务加入同一网络，通过服务名（mysql / redis / backend）互相访问
+networks:
+  fp-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

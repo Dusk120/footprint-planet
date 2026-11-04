@@ -39,5 +39,20 @@ node_modules/
 dist/
 *.log
 
-# 实际开发配置文件（含数据库密码 / JWT 密钥 / OSS 密钥），不提交
-src/main/resources/application-dev.yml
+# 环境配置文件（含数据库密码 / JWT 密钥 / OSS 密钥），不提交；.example 模板不受影响
+src/main/resources/application-*.yml
+
+# Docker 部署的密钥文件（数据库密码 / JWT 密钥），不提交；模板见 .env.example
+.env
+.env.*
+!.env.example
+
+# Docker Compose 本地覆盖配置（可能含密钥/端口覆盖），不提交
+docker-compose.override.yml
+
+# 证书 / 私钥，不提交
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore

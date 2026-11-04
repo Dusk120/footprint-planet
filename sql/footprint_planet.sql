@@ -23,6 +23,10 @@
 --                   （取自前端 public/textures/china-provinces-geo.js 的 name）
 -- ============================================================
 
+-- 关键：强制本次导入会话使用 utf8mb4 客户端字符集。
+-- MySQL 官方镜像 initdb 默认用 latin1 客户端，不指定会导致中文按 latin1 存成乱码。
+SET NAMES utf8mb4;
+
 DROP DATABASE IF EXISTS footprint_planet;
 CREATE DATABASE footprint_planet DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE footprint_planet;

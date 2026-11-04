@@ -1,4 +1,4 @@
-# Footprint Planet · 足迹星球（后端服务）
+# Footprint Planet · 足迹星球
 
 「足迹星球」是一款旅行足迹 / 旅行社区 Web 应用：用户点亮去过的城市、按时间轴回顾旅行回忆、以地图驱动的方式编排旅游规划（支持多人实时协同）、在社区发布笔记并互相点赞评论，管理员在管理端进行用户、笔记与反馈治理。本仓库同时存放**后端服务**（根目录，Spring Boot）与**前端**（`frontend/`，Vue 3）。
 
@@ -186,6 +186,91 @@ curl -s -X POST http://localhost:8080/api/auth/login \
   -d '{"username":"admin","password":"123456","uuid":"<uuid>","code":"<code>"}'
 # => {"code":0,"message":"ok","data":{"token":"...","user":{...}}}
 ```
+
+## Docker 部署（可选）
+
+除本地手动启动外，项目提供了完整的容器化方案：一条命令拉起 **MySQL + Redis + 后端 + 前端** 四个容器，无需在本机安装 JDK / Maven / Node / MySQL。
+
+### 涉及文件
+
+| 文件 | 作用 |
+| --- | --- |
+| `docker-compose.yml` | 编排四个服务 + 显式网络 `fp-network` |
+| `Dockerfile` | 后端多阶段构建（Maven 打包 → JRE 运行） |
+| `frontend/Dockerfile` | 前端多阶段构建（Node 构建 → Nginx 托管） |
+| `frontend/nginx.conf` | Nginx 托管静态页，并把 `/api`、`/ws` 反代到 backend |
+| `sql/Dockerfile` | 自定义 MySQL 镜像，把建库脚本打进 `/docker-entrypoint-initdb.d/`，首次启动自动建库导数据 |
+| `.env.example` | 部署配置模板（复制为 `.env` 后填写） |
+
+### 前置条件
+
+- Docker 引擎 + Docker Compose v2（`docker compose version` 可验证）；
+- 建议可用内存 ≥ 2 GB（首次构建 Maven + npm 编译较吃内存）；
+- 首次构建需联网拉取基础镜像（`maven`、`node`、`mysql:8.0`、`redis`、`nginx`）。
+
+### 部署步骤
+
+```bash
+# 1) 复制配置模板并填写（.env 已被 .gitignore 忽略，不会提交）
+cp .env.example .env
+vim .env
+
+# 2) 构建并启动（-d 后台运行）
+docker compose up -d --build
+
+# 3) 查看状态 / 日志
+docker compose ps
+docker compose logs -f backend
+```
+
+`.env` 需要填写的项：
+
+| 变量 | 说明 |
+| --- | --- |
+| `MYSQL_ROOT_PASSWORD` | MySQL root 密码（backend 也用同一密码连库） |
+| `FOOTPRINT_JWT_SECRET_KEY` | JWT 签名密钥，**≥32 字节随机串**（用 `openssl rand -base64 48` 生成） |
+| `FOOTPRINT_FRONTEND_URL` | 前端访问地址（拼邀请链接用），如 `http://<服务器IP>:81` |
+| `FOOTPRINT_AMAP_WEB_KEY` | 高德 Web 服务 key（可选，不填则「出行方案」算路降级为直线） |
+
+### 端口说明
+
+| 宿主机端口 | 容器端口 | 服务 | 说明 |
+| --- | --- | --- | --- |
+| `3307` | 3306 | MySQL | 避开宿主机可能已占用的 3306 |
+| `6380` | 6379 | Redis | 避开宿主机可能已占用的 6379 |
+| `8080` | 8080 | 后端 | REST + WebSocket |
+| `81` | 80 | 前端 | Nginx，浏览器访问 `http://<服务器IP>:81` |
+
+> backend 与 mysql / redis 之间走 **Docker 内部网络**（服务名 `mysql:3306` / `redis:6379`），不受宿主机端口映射影响，因此改宿主机端口不影响服务间通信。
+
+### 配置来源（与本地启动的区别）
+
+Docker 部署**不使用** `application-dev.yml`。`docker-compose.yml` 里设置了 `SPRING_PROFILES_ACTIVE=prod`，并通过环境变量（`FOOTPRINT_DATASOURCE_*`、`FOOTPRINT_REDIS_*`、`FOOTPRINT_JWT_*` 等）注入配置，Spring Boot 的 relaxed binding 会把它们映射到 `application.yml` 的 `${footprint.*}` 占位符。所以本地 `application-dev.yml` 里的密码/密钥**不会被 Docker 使用**，需要在 `.env` 里单独填。
+
+### 常用运维命令
+
+```bash
+# 只重建改动的服务（比全量快；改后端只需重建 backend）
+docker compose up -d --build backend
+
+# 重启单个服务
+docker compose restart backend
+
+# 改了 SQL / 需要重新初始化数据库：删数据卷后重建
+docker compose down -v
+docker compose up -d --build
+
+# 停止（保留数据卷）
+docker compose down
+```
+
+### 常见问题
+
+- **构建报 `additional privileges requested` / `--allow=fs.read`**：Docker Buildx 0.37.2 的已知回归 bug。设置环境变量 `BUILDX_BAKE_ENTITLEMENTS_FS=0`（Windows 在「系统属性 → 环境变量」里新增，或 PowerShell `$env:BUILDX_BAKE_ENTITLEMENTS_FS="0"`）后重启 IDE / 终端即可；等 Docker 官方修复后可移除。
+- **数据库中文乱码**：建库脚本已加 `SET NAMES utf8mb4;`。若之前初始化过乱码数据，需 `docker compose down -v` 删卷后重新初始化。
+- **改了业务代码不生效**：`docker compose up -d` 不会自动重建镜像，必须带 `--build`（或只重建对应服务）。
+- **构建 / 运行 OOM**：调小 `docker-compose.yml` 里 `JAVA_OPTS` 的 `-Xmx`，或给宿主机加内存 / swap。
+- **用 IDE 连接远程 Docker（虚拟机）**：需本地安装 Docker CLI + buildx（`docker version`、`docker buildx version` 均可输出版本号）。
 
 ## 关联资源
 
