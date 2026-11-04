@@ -24,7 +24,7 @@ const emit = defineEmits(['like', 'click'])
     </div>
     <div class="note-info">
       <h4 class="note-title">{{ note.title }}</h4>
-      <span class="note-location" v-if="note.location">📍 {{ note.location.name }}</span>
+      <span v-if="note.location" class="note-location">📍 {{ note.location.name }}</span>
       <p v-if="note.content" class="note-content">{{ note.content }}</p>
       <div class="note-meta">
         <span class="note-author">@{{ note.author }}</span>

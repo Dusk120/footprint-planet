@@ -36,14 +36,14 @@ function go(p) {
 
 <template>
   <div v-if="totalPages > 1" class="admin-pagination">
-    <button class="page-btn" :disabled="page <= 1" @click="go(page - 1)" aria-label="上一页">
+    <button class="page-btn" :disabled="page <= 1" aria-label="上一页" @click="go(page - 1)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <template v-for="(p, i) in pageNumbers" :key="p === null ? `gap-${i}` : p">
       <button v-if="p === null" class="page-num" disabled>…</button>
       <button v-else class="page-num" :class="{ active: p === page }" @click="go(p)">{{ p }}</button>
     </template>
-    <button class="page-btn" :disabled="page >= totalPages" @click="go(page + 1)" aria-label="下一页">
+    <button class="page-btn" :disabled="page >= totalPages" aria-label="下一页" @click="go(page + 1)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
   </div>

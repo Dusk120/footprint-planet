@@ -69,7 +69,7 @@ async function handleLogout() {
       </nav>
 
       <div class="admin-aside-footer">
-        <button class="admin-back-btn" @click="goBackClient" title="返回客户端">
+        <button class="admin-back-btn" title="返回客户端" @click="goBackClient">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           <span>返回客户端</span>
         </button>

@@ -90,7 +90,7 @@ async function confirmRemove() {
       <!-- 左侧地图 -->
       <div class="map-section">
         <div class="map-container glass-panel">
-          <EChartsChinaMap ref="mapRef" :cities="store.visitedCityList" @cityClick="handleCityClick" />
+          <EChartsChinaMap ref="mapRef" :cities="store.visitedCityList" @city-click="handleCityClick" />
         </div>
         <!-- 缩放控件 -->
         <div class="map-controls">

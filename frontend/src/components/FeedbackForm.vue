@@ -108,8 +108,8 @@ async function submitFeedback() {
         placeholder="邮箱 / 微信 / QQ，方便我们回复你"
       />
 
-      <div class="thumb-grid" v-if="images.length">
-        <div class="upload-thumb" v-for="(img, i) in images" :key="img">
+      <div v-if="images.length" class="thumb-grid">
+        <div v-for="(img, i) in images" :key="img" class="upload-thumb">
           <img :src="img" alt="反馈图片" />
           <button class="thumb-del" type="button" @click="removeImage(i)">×</button>
         </div>

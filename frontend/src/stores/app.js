@@ -60,7 +60,10 @@ export const useAppStore = defineStore('app', () => {
     setToken(res.token)
     isLoggedIn.value = true
     setUserData(res.user)
-    await loadLoginData()
+    // token 已写入、登录态已生效，到这里登录就算成功了。
+    // 足迹列表是次要数据，单独 try：否则它失败会让 login() 整体 reject，
+    // 用户在登录页看到「网络连接失败」（实际已登录），还会顺带跳过下面的通知连接。
+    try { await loadLoginData() } catch (e) { /* 统计先留 0，进页面会再拉 */ }
     useNotificationStore().connect()
     return true
   }
@@ -70,7 +73,8 @@ export const useAppStore = defineStore('app', () => {
     setToken(res.token)
     isLoggedIn.value = true
     setUserData(res.user)
-    await loadLoginData()
+    // 同 login：注册已成功，足迹列表失败不该让用户以为注册失败
+    try { await loadLoginData() } catch (e) { /* 统计先留 0，进页面会再拉 */ }
     useNotificationStore().connect()
     return true
   }
