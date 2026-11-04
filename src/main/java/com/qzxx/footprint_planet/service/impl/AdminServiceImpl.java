@@ -77,7 +77,12 @@ public class AdminServiceImpl implements AdminService {
         }
         adminDashboardVO.setTrend(noteTrendVOList);
         adminDashboardVO.setHotCities(hotService.getHotDestinations());
-        List<Note> notes = noteMapper.selectList(new LambdaQueryWrapper<Note>().orderByDesc(Note::getLikes).last("limit 5"));
+        // 榜单只需要标题/作者/点赞数/时间：content 是 TEXT、image 可能存 base64、photos 是 JSON，
+        // 这四列对 Top5 展示毫无用处，限定列可避免每条笔记搬运几十 KB
+        List<Note> notes = noteMapper.selectList(new LambdaQueryWrapper<Note>()
+                .select(Note::getId, Note::getTitle, Note::getAuthorNickname, Note::getLikes, Note::getCreatedAt)
+                .orderByDesc(Note::getLikes)
+                .last("limit 5"));
         List<HotNoteVO> hotNoteVOList = notes.stream().map(note -> {
             HotNoteVO hotNoteVO = new HotNoteVO();
             BeanUtil.copyProperties(note, hotNoteVO);
@@ -115,9 +120,16 @@ public class AdminServiceImpl implements AdminService {
                 ));
 
         // 统计每个用户访问城市数量: userId -> count
-        Map<Long, Integer> visitedCityMap = visitedCityMapper.selectList(new LambdaQueryWrapper<VisitedCity>().
-                        in(VisitedCity::getUserId, userIdList)).stream().
-                collect(Collectors.groupingBy(VisitedCity::getUserId, Collectors.summingInt(e -> 1)));
+        // 与上面的 noteMap 同款处理：只查两列交给数据库聚合，
+        // visited_city 的 records 是 JSON 列，整行拉回来只为数个数纯属浪费
+        Map<Long, Integer> visitedCityMap = visitedCityMapper.selectMaps(new QueryWrapper<VisitedCity>().
+                select("user_id AS userId", "COUNT(*) AS cnt").
+                in("user_id", userIdList).
+                groupBy("userId")).stream().
+                collect(Collectors.toMap(
+                        m -> ((Number) m.get("userId")).longValue(),
+                        m -> ((Number) m.get("cnt")).intValue()
+                ));
         List<AdminUserVO> list = records.stream().map(user -> {
             AdminUserVO adminUserVO = new AdminUserVO();
             BeanUtil.copyProperties(user, adminUserVO);
