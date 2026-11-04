@@ -14,11 +14,15 @@ services:
       - fp-network
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # 北京时间：镜像默认 UTC，会让 CURRENT_TIMESTAMP 比后端写入的 LocalDateTime 差 8 小时
+      TZ: Asia/Shanghai
     # 项目按 MySQL 8 + utf8mb4 开发（JSON 列、外键级联）
     # 小内存机器压低 InnoDB 缓冲池与连接数
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+      # 显式固定会话时区，不依赖镜像内 tzdata 是否完整（中国无夏令时，+08:00 恒定）
+      - --default-time-zone=+08:00
       - --innodb-buffer-pool-size=128M
       - --max_connections=80
     volumes:
@@ -59,6 +63,10 @@ services:
       # 覆盖默认 dev profile，避免加载本地 application-dev.yml；配置全部走环境变量
       SPRING_PROFILES_ACTIVE: prod
 
+      # 北京时间：JRE 镜像默认 UTC，会让「旅行天数」「近 7 天趋势」按 UTC 日期切分
+      # 与 JVM 参数双保险：TZ 影响日志时间戳，-Duser.timezone 用 JDK 自带时区库，不依赖镜像 tzdata
+      TZ: Asia/Shanghai
+
       # ===== MySQL（指向服务名 mysql，而非 localhost）=====
       FOOTPRINT_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
       FOOTPRINT_DATASOURCE_HOST: mysql
@@ -83,8 +91,8 @@ services:
       # 高德 Web 服务 key（可选；不填则「出行方案」算路降级为直线）
       FOOTPRINT_AMAP_WEB_KEY: ${FOOTPRINT_AMAP_WEB_KEY:-}
 
-      # 小内存机器压低 JVM 堆，降低 OOM 风险
-      JAVA_OPTS: -Xms128m -Xmx320m
+      # 小内存机器压低 JVM 堆，降低 OOM 风险；时区与上面的 TZ 保持一致
+      JAVA_OPTS: -Xms128m -Xmx320m -Duser.timezone=Asia/Shanghai
     ports:
       - "8080:8080"
 
@@ -98,6 +106,9 @@ services:
       - fp-network
     depends_on:
       - backend
+    environment:
+      # 北京时间：Nginx 访问日志的 $time_local 取系统时区，统一后便于和后端日志对齐排查
+      TZ: Asia/Shanghai
     ports:
       - "81:80"
 

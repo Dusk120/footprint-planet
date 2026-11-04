@@ -214,6 +214,8 @@ CREATE TABLE note (
   created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
   PRIMARY KEY (id),
   KEY idx_author (author_id),
+  -- 管理端「近 7 天笔记趋势」按 created_at 做范围查询，没这个索引会退化成全表扫描
+  KEY idx_created (created_at),
   CONSTRAINT fk_note_user FOREIGN KEY (author_id) REFERENCES user (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='社区笔记';
 

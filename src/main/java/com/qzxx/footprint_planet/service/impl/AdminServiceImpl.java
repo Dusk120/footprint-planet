@@ -3,10 +3,10 @@ package com.qzxx.footprint_planet.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
 import com.qzxx.footprint_planet.common.RedisKeys;
-import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.ResetPasswordDTO;
 import com.qzxx.footprint_planet.dto.request.UpdateUserStatusDTO;
@@ -29,10 +29,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,14 +58,22 @@ public class AdminServiceImpl implements AdminService {
         adminDashboardVO.setFeedbackCount(feedbackMapper.selectCount(null));
         adminDashboardVO.setPendingFeedbackCount(feedbackMapper.selectCount(new LambdaQueryWrapper<Feedback>().eq(Feedback::getHandled, 0)));
         LocalDate now = LocalDate.now();
+        LocalDate start = now.minusDays(6);
+
+        // 一条 SQL 覆盖整周并按天聚合：WHERE 走 idx_created 索引区间，GROUP BY 只带回有数据的日期
+        List<Map<String, Object>> noteTrends = noteMapper.selectMaps(new QueryWrapper<Note>().
+                select("DATE_FORMAT(created_at, '%Y-%m-%d') AS d", "COUNT(*) AS c").
+                ge("created_at", start.atStartOfDay()).
+                groupBy("d"));
+
+        Map<String, Long> countByDate = new HashMap<>();
+        for (Map<String, Object> noteTrend : noteTrends) {
+            countByDate.put((String) noteTrend.get("d"), ((Number) noteTrend.get("c")).longValue());
+        }
+        // 关键：GROUP BY 不会返回「零笔记」的日期，这里按 7 天补全，缺的记 0
         List<NoteTrendVO> noteTrendVOList = new ArrayList<>();
-        for (int i = 6; i >= 0; i--) {
-            NoteTrendVO noteTrendVO = new NoteTrendVO();
-            LocalDate date = now.minusDays(i);
-            Long l = noteMapper.selectCount(new LambdaQueryWrapper<Note>().like(Note::getCreatedAt, date));
-            noteTrendVO.setDate(date.toString());
-            noteTrendVO.setNoteCount(l);
-            noteTrendVOList.add(noteTrendVO);
+        for (LocalDate date = start; !date.isAfter(now); date = date.plusDays(1)) {
+            noteTrendVOList.add(new NoteTrendVO(date.toString(), countByDate.getOrDefault(date.toString(), 0L)));
         }
         adminDashboardVO.setTrend(noteTrendVOList);
         adminDashboardVO.setHotCities(hotService.getHotDestinations());
@@ -98,9 +103,16 @@ public class AdminServiceImpl implements AdminService {
         List<Long> userIdList = records.stream().map(User::getId).toList();
 
         // 统计每个用户笔记数量: authorId -> count
-        Map<Long, Integer> noteMap = noteMapper.selectList(new LambdaQueryWrapper<Note>().
-                        in(Note::getAuthorId, userIdList)).stream().
-                collect(Collectors.groupingBy(Note::getAuthorId, Collectors.summingInt(e -> 1)));
+        // 只查两列并交给数据库 GROUP BY，避免把整页用户的全部笔记（content TEXT / image base64 / photos JSON）拉进内存
+        // COUNT(*) 在 MySQL 是 BIGINT，驱动返回 Long，必须走 Number 转换，直接 (Integer) 会 ClassCastException
+        Map<Long, Integer> noteMap = noteMapper.selectMaps(new QueryWrapper<Note>().
+                select("author_id AS authorId","COUNT(*) AS cnt").
+                in("author_id", userIdList).
+                groupBy("authorId")).stream().
+                collect(Collectors.toMap(
+                        m -> ((Number) m.get("authorId")).longValue(),
+                        m -> ((Number) m.get("cnt")).intValue()
+                ));
 
         // 统计每个用户访问城市数量: userId -> count
         Map<Long, Integer> visitedCityMap = visitedCityMapper.selectList(new LambdaQueryWrapper<VisitedCity>().

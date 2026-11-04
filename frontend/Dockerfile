@@ -12,6 +12,8 @@ RUN npm run build
 
 # ===== 运行阶段：Nginx 托管 dist =====
 FROM nginx:alpine
+# alpine 基础镜像不带 tzdata，缺它时 TZ=Asia/Shanghai 会静默退回 UTC（访问日志时间戳仍是 UTC）
+RUN apk add --no-cache tzdata
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
