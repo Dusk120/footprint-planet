@@ -1,6 +1,10 @@
 package com.qzxx.footprint_planet.controller;
 
+import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.common.RateLimiter;
+import com.qzxx.footprint_planet.common.RedisKeys;
 import com.qzxx.footprint_planet.common.Result;
+import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.RouteSearchDTO;
 import com.qzxx.footprint_planet.service.RouteProxyService;
 import com.qzxx.footprint_planet.vo.RouteOptionVO;
@@ -20,6 +24,8 @@ public class RouteController {
 
     @Resource
     private RouteProxyService routeProxyService;
+    @Resource
+    private RateLimiter rateLimiter;
 
     private static final Map<String, String> LABELS = Map.of(
             "driving", "驾车",
@@ -29,6 +35,10 @@ public class RouteController {
 
     @PostMapping("/api/route/search")
     public Result<List<RouteOptionVO>> search(@RequestBody RouteSearchDTO dto) {
+        if (!rateLimiter.tryAcquire(RedisKeys.routeRateLimit(BaseContext.getCurrentId()), 60, 30)) {
+            throw new BusinessException(429, "操作太频繁，请稍后再试");
+        }
+
         String from = dto.getFromLng() + "," + dto.getFromLat();
         String to = dto.getToLng() + "," + dto.getToLat();
         List<RouteOptionVO> list = new ArrayList<>();
