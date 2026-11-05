@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.config.MybatisPlusConfig;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.dto.request.CommentDTO;
 import com.qzxx.footprint_planet.dto.request.CommentLikeDTO;
@@ -56,6 +57,11 @@ public class CommentServiceImpl implements CommentService {
         if (note == null) {
             throw new BusinessException(404,"笔记不存在");
         }
+        // 钳制到 [1, MAX_PAGE_SIZE]：下面要「多取一条」判断 hasMore，
+        // 若请求值超过上限，多取的那条会被分页拦截器截掉，hasMore 恒为 false，
+        // 表现为滚动加载提前终止、后续评论再也加载不出来。
+        pageSize = Math.min(Math.max(pageSize == null ? 10 : pageSize, 1),
+                MybatisPlusConfig.MAX_PAGE_SIZE);
         Page<NoteComment> noteCommentPage = new Page<>(1, pageSize+1);
         LambdaQueryWrapper<NoteComment> noteCommentLambdaQueryWrapper = new LambdaQueryWrapper<NoteComment>()
                 .eq(NoteComment::getNoteId, noteId).isNull(NoteComment::getParentId)

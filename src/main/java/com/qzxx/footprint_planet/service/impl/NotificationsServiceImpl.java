@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.config.MybatisPlusConfig;
 import com.qzxx.footprint_planet.context.BaseContext;
 import com.qzxx.footprint_planet.entity.Notification;
 import com.qzxx.footprint_planet.entity.User;
@@ -37,6 +38,10 @@ public class NotificationsServiceImpl implements NotificationsService {
     public NotificationPageVO getNotifications(String type, Long cursor, Integer pageSize) {
         Long userId = BaseContext.getCurrentId();
         List<String> types = typesOf(type);
+        // 钳制到 [1, MAX_PAGE_SIZE]：下面要「多取一条」判断 hasMore，
+        // 超过上限时多取的那条会被分页拦截器截掉，hasMore 恒为 false，加载会提前终止
+        pageSize = Math.min(Math.max(pageSize == null ? 10 : pageSize, 1),
+                MybatisPlusConfig.MAX_PAGE_SIZE);
         Page<Notification> pageData = new Page<>(1, pageSize+1);
         LambdaQueryWrapper<Notification> qw = new LambdaQueryWrapper<Notification>()
                 .eq(Notification::getUserId, userId)
