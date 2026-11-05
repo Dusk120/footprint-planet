@@ -10,6 +10,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -68,6 +69,17 @@ public class GlobalExceptionHandler {
     public Result<Void> handleDuplicateKey(DuplicateKeyException e) {
         log.warn("数据唯一键冲突: {}", e.getMessage());
         return Result.error(400, "数据已存在，请勿重复提交");
+    }
+
+    /**
+     * 上传内容超过 multipart 上限（当前 max-file-size = 10MB）。
+     * 不处理的话会落到兜底的 Exception，前端只会看到「服务器开小差了」，
+     * 而真正原因（文件太大）完全传达不到用户。
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public Result<Void> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+        log.warn("上传内容超过限制: {}", e.getMessage());
+        return Result.error(400, "图片不能超过 10MB");
     }
 
     /** 访问了不存在的资源路径 */

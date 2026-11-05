@@ -18,8 +18,12 @@ spring:
       password: ${footprint.redis.password:}
   servlet:
     multipart:
+      # 单个文件上限（与前端校验一致；前端允许 ≤10MB）
       max-file-size: 10MB
-      max-request-size: 10MB
+      # 整个 multipart 请求体上限（文件 + boundary + 各字段头信息）。
+      # 必须大于 max-file-size，否则「正好 10MB」的文件会因请求体超出而被拒
+      # （max-request-size 与 max-file-size 相等是个坑，10MB 文件实测会 500）。
+      max-request-size: 12MB
 
 # ===== MyBatis-Plus =====
 mybatis-plus:
