@@ -231,6 +231,13 @@ docker compose logs -f backend
 | `FOOTPRINT_JWT_SECRET_KEY` | JWT 签名密钥，**≥32 字节随机串**（用 `openssl rand -base64 48` 生成） |
 | `FOOTPRINT_FRONTEND_URL` | 前端访问地址（拼邀请链接用），如 `http://<服务器IP>:81` |
 | `FOOTPRINT_AMAP_WEB_KEY` | 高德 Web 服务 key（可选，不填则「出行方案」算路降级为直线） |
+| `ALIYUN_OSS_ENDPOINT` | OSS 上传地址，如 `https://oss-cn-hangzhou.aliyuncs.com` |
+| `ALIYUN_OSS_ACCESS_KEY_ID` | OSS AccessKey ID |
+| `ALIYUN_OSS_ACCESS_KEY_SECRET` | OSS AccessKey Secret |
+| `ALIYUN_OSS_BUCKET_NAME` | Bucket 名称 |
+| `ALIYUN_OSS_URL_PREFIX` | 图片访问前缀，如 `https://<bucket>.oss-cn-hangzhou.aliyuncs.com` |
+
+> 后 5 项对应 `application.yml` 里的 `aliyun.oss.*`，**上传接口必需**：不填时应用仍能启动，但所有上传（头像 / 封面 / 笔记配图 / 反馈截图）会返回 `503 图片服务暂不可用`。
 
 ### 端口说明
 
