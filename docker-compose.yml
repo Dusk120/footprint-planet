@@ -91,6 +91,14 @@ services:
       # 高德 Web 服务 key（可选；不填则「出行方案」算路降级为直线）
       FOOTPRINT_AMAP_WEB_KEY: ${FOOTPRINT_AMAP_WEB_KEY:-}
 
+      # ===== 阿里云 OSS（图片上传）=====
+      # 缺这几项时应用能启动，但所有上传接口会返回 503「图片服务暂不可用」
+      ALIYUN_OSS_ENDPOINT: ${ALIYUN_OSS_ENDPOINT}
+      ALIYUN_OSS_ACCESS_KEY_ID: ${ALIYUN_OSS_ACCESS_KEY_ID}
+      ALIYUN_OSS_ACCESS_KEY_SECRET: ${ALIYUN_OSS_ACCESS_KEY_SECRET}
+      ALIYUN_OSS_BUCKET_NAME: ${ALIYUN_OSS_BUCKET_NAME}
+      ALIYUN_OSS_URL_PREFIX: ${ALIYUN_OSS_URL_PREFIX}
+
       # 小内存机器压低 JVM 堆，降低 OOM 风险；时区与上面的 TZ 保持一致
       JAVA_OPTS: -Xms128m -Xmx320m -Duser.timezone=Asia/Shanghai
     ports:
