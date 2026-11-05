@@ -28,7 +28,6 @@ export const useNotificationStore = defineStore('notification', () => {
   // 分 tab 未读数；总未读（铃铛红点）= 两者之和
   const unread = reactive({ like: 0, comment: 0 })
   const totalUnread = computed(() => unread.like + unread.comment)
-  const connected = ref(false)
 
   const { show } = useToast()
   let client = null
@@ -58,14 +57,7 @@ export const useNotificationStore = defineStore('notification', () => {
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 5000,
       onConnect: () => {
-        connected.value = true
         client.subscribe('/user/queue/notifications', onMessage)
-      },
-      onDisconnect: () => {
-        connected.value = false
-      },
-      onStompError: () => {
-        connected.value = false
       },
     })
     client.activate()
@@ -80,7 +72,6 @@ export const useNotificationStore = defineStore('notification', () => {
       }
       client = null
     }
-    connected.value = false
   }
 
   // 拉取某一 tab：reset=true 拉第一页（清空重载），否则按游标加载下一页
@@ -133,7 +124,6 @@ export const useNotificationStore = defineStore('notification', () => {
     activeTab,
     unread,
     totalUnread,
-    connected,
     connect,
     disconnect,
     fetchTab,

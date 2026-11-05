@@ -1,9 +1,7 @@
 package com.qzxx.footprint_planet.service;
 
-import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.dto.request.ResetPasswordDTO;
 import com.qzxx.footprint_planet.dto.request.UpdateUserStatusDTO;
-import com.qzxx.footprint_planet.entity.Feedback;
 import com.qzxx.footprint_planet.vo.*;
 
 /** 管理端：仪表盘 / 用户 / 笔记 / 反馈 */

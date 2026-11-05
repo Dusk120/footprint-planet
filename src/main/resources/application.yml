@@ -32,15 +32,6 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
-# ===== JWT（签名密钥）=====
-jwt:
-  # 设置jwt签名加密时使用的秘钥
-  secret-key: ${footprint.jwt.secret-key}
-  # 设置jwt过期时间
-  ttl: ${footprint.jwt.ttl}
-  # 设置前端传递过来的令牌名称
-  token-name: ${footprint.jwt.token-name}
-
 # ===== 应用配置 =====
 app:
   # 前端地址（拼邀请链接 link 用），真实值在 application-dev.yml 的 footprint.frontend-url
