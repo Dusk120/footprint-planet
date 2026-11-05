@@ -27,6 +27,11 @@ public final class RedisKeys {
      */
     public static final String ROUTE_RATE_PREFIX = "rate:route:";
 
+    /**
+     * 上传接口限流计数 key（全局限流：所有调用方共用一个桶）。
+     */
+    public static final String UPLOAD_RATE_KEY = "rate:upload:global";
+
     public static String userStatus(Long userId) {
         return USER_STATUS_PREFIX + userId;
     }

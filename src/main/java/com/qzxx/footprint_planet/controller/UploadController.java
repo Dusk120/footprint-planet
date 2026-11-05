@@ -1,8 +1,11 @@
 package com.qzxx.footprint_planet.controller;
 
 import com.qzxx.footprint_planet.common.BusinessException;
+import com.qzxx.footprint_planet.common.RateLimiter;
+import com.qzxx.footprint_planet.common.RedisKeys;
 import com.qzxx.footprint_planet.common.Result;
 import com.qzxx.footprint_planet.service.OssService;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class UploadController {
 
     private final OssService ossService;
+    @Resource
+    private RateLimiter rateLimiter;
 
     public UploadController(OssService ossService) {
         this.ossService = ossService;
@@ -28,6 +33,10 @@ public class UploadController {
         // 声明为非必填后，缺参数走下面的分支，返回可读的 400。
         if (file == null || file.isEmpty()) {
             return Result.error("请选择要上传的图片");
+        }
+        if (!rateLimiter.tryAcquire(RedisKeys.UPLOAD_RATE_KEY, 60, 180)) {
+            log.warn("上传被全局限流拦截, key={}", RedisKeys.UPLOAD_RATE_KEY);
+            throw new BusinessException(429, "当前上传人数较多，请稍后重试");
         }
         try {
             return Result.success(ossService.upload(file));
